@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Funil de Tráfego — Meta Ads</title>
+<style>
+/* ---------------------------------------------------------------- tokens */
+:root{
+  color-scheme: light;
+  --surface-1:#fcfcfb; --plane:#f2f2ef; --card:#ffffff;
+  --ink-1:#0b0b0b; --ink-2:#52514e; --ink-3:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
+  --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1baf7a;
+  --good:#0ca30c; --good-text:#006300; --warning:#fab219; --critical:#d03b3b;
+  --f1:#86b6ef; --f2:#5598e7; --f3:#2a78d6; --f4:#1c5cab; --f5:#104281;
+  --scale-ink:#2a78d6;
+  --shadow:0 1px 2px rgba(11,11,11,.05), 0 8px 24px -12px rgba(11,11,11,.18);
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --surface-1:#1a1a19; --plane:#0d0d0d; --card:#1a1a19;
+  --ink-1:#ffffff; --ink-2:#c3c2b7; --ink-3:#898781;
+  --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.10);
+  --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70;
+  --good:#0ca30c; --good-text:#0ca30c; --warning:#fab219; --critical:#d03b3b;
+  --f1:#b7d3f6; --f2:#86b6ef; --f3:#5598e7; --f4:#2a78d6; --f5:#184f95;
+  --scale-ink:#3987e5;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--plane); color:var(--ink-1);
+  font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1440px;margin:0 auto;padding:24px 20px 72px}
+
+/* ---------------------------------------------------------------- header */
+header.top{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;margin-bottom:20px}
+h1{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:0 0 4px}
+.sub{color:var(--ink-2);font-size:13px;margin:0}
+.top-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{
+  display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;
+  border:1px solid var(--ring);background:var(--card);color:var(--ink-2);
+  font-size:12px;font-weight:550;white-space:nowrap;
+}
+.badge.tax{color:var(--ink-1);border-color:color-mix(in srgb,var(--series-1) 45%,transparent)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--good);flex:none}
+
+button,select,input{font:inherit;color:inherit}
+.btn{
+  appearance:none;border:1px solid var(--ring);background:var(--card);color:var(--ink-2);
+  border-radius:8px;padding:6px 11px;font-size:13px;font-weight:550;cursor:pointer;
+  transition:background .12s,color .12s,border-color .12s;
+}
+.btn:hover{background:var(--plane);color:var(--ink-1)}
+.btn[aria-pressed="true"],.btn.on{background:var(--series-1);border-color:var(--series-1);color:#fff}
+
+/* ---------------------------------------------------------------- filtros */
+.controls{
+  display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;
+  background:var(--card);border:1px solid var(--ring);border-radius:14px;
+  padding:12px 14px;margin-bottom:18px;box-shadow:var(--shadow);
+}
+.controls .grp{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.controls label{font-size:12px;color:var(--ink-3);font-weight:550;text-transform:uppercase;letter-spacing:.04em}
+.controls input[type=date]{
+  background:var(--plane);border:1px solid var(--ring);border-radius:8px;padding:5px 8px;font-size:13px;
+}
+.spacer{flex:1 1 auto}
+
+/* ---------------------------------------------------------------- cards */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px;margin-bottom:14px}
+.kpi{
+  background:var(--card);border:1px solid var(--ring);border-radius:14px;padding:14px 15px;
+  box-shadow:var(--shadow);min-width:0;
+}
+.kpi .k{font-size:11.5px;color:var(--ink-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+  display:flex;align-items:center;gap:5px;margin-bottom:7px}
+.kpi .v{font-size:25px;font-weight:640;letter-spacing:-.02em;line-height:1.1;overflow-wrap:anywhere}
+.kpi .d{font-size:12px;color:var(--ink-3);margin-top:6px;display:flex;align-items:center;gap:5px;min-height:18px}
+.d .up{color:var(--good-text);font-weight:600}
+.d .down{color:var(--critical);font-weight:600}
+.d .flat{color:var(--ink-3);font-weight:600}
+
+/* ---------------------------------------------------------------- painel */
+.panel{
+  background:var(--card);border:1px solid var(--ring);border-radius:14px;padding:16px 18px 18px;
+  box-shadow:var(--shadow);margin-bottom:14px;min-width:0;
+}
+.panel h2{font-size:14px;font-weight:640;margin:0 0 2px;letter-spacing:-.005em}
+.panel .note{font-size:12px;color:var(--ink-3);margin:0 0 14px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.grid-funnel{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px}
+@media (max-width:980px){.grid2,.grid-funnel{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------------------------------------------------------------- funil */
+.funnel{display:flex;flex-direction:column;gap:9px}
+.stage{display:grid;grid-template-columns:132px minmax(0,1fr) auto;gap:12px;align-items:center}
+.stage .name{font-size:12.5px;color:var(--ink-2);font-weight:550}
+.stage .track{background:var(--plane);border-radius:5px;height:26px;overflow:hidden;position:relative}
+.stage .fill{height:100%;border-radius:5px;min-width:3px;transition:width .35s cubic-bezier(.4,0,.2,1)}
+.stage .val{font-size:14px;font-weight:620;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.stage .val small{display:block;font-size:11px;color:var(--ink-3);font-weight:550}
+.stage.head .name{color:var(--ink-1);font-weight:620}
+
+/* ---------------------------------------------------------------- charts */
+.chart{width:100%;display:block;overflow:visible}
+.chart .gl{stroke:var(--grid);stroke-width:1}
+.chart .ax{stroke:var(--axis);stroke-width:1}
+.chart text{fill:var(--ink-3);font-size:11px;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.chart text.lbl{fill:var(--ink-2);font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
+.chart .hit{fill:transparent;cursor:crosshair}
+.chart .cross{stroke:var(--axis);stroke-width:1;stroke-dasharray:3 3;pointer-events:none;opacity:0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 10px;font-size:12px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block;flex:none}
+.legend i.dash{height:0;border-top:2px dashed currentColor;border-radius:0;width:14px}
+
+#tip{
+  position:fixed;z-index:50;pointer-events:none;opacity:0;transition:opacity .1s;
+  background:var(--card);border:1px solid var(--ring);border-radius:10px;padding:9px 11px;
+  box-shadow:var(--shadow);font-size:12.5px;color:var(--ink-1);max-width:280px;
+}
+#tip b{display:block;font-size:12px;color:var(--ink-3);font-weight:600;margin-bottom:5px}
+#tip .r{display:flex;align-items:center;gap:7px;justify-content:space-between;gap:16px}
+#tip .r em{font-style:normal;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+#tip .r strong{font-variant-numeric:tabular-nums;font-weight:620}
+#tip i{width:9px;height:9px;border-radius:2px;display:inline-block;flex:none}
+
+/* ---------------------------------------------------------------- tabelas */
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tblwrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:1080px}
+th,td{padding:9px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--grid)}
+th:first-child,td:first-child{text-align:left;white-space:normal;min-width:270px;max-width:420px}
+thead th{
+  font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.045em;font-weight:650;
+  cursor:pointer;user-select:none;position:sticky;top:0;background:var(--card);z-index:2;
+  border-bottom:1px solid var(--axis);
+}
+thead th:hover{color:var(--ink-1)}
+thead th .arw{opacity:.35;font-size:9px;margin-left:3px}
+thead th[data-active] .arw{opacity:1;color:var(--series-1)}
+tbody td{font-variant-numeric:tabular-nums;color:var(--ink-2)}
+tbody td:first-child{color:var(--ink-1);font-weight:550;line-height:1.35}
+tbody tr:hover td{background:color-mix(in srgb,var(--series-1) 6%,transparent)}
+tfoot td{font-weight:650;color:var(--ink-1);border-top:1px solid var(--axis);border-bottom:none;
+  position:sticky;bottom:0;background:var(--card)}
+.cell-scale{border-radius:5px;padding:3px 7px;display:inline-block;min-width:62px;text-align:right}
+.muted-row td{opacity:.62;font-style:italic}
+
+/* ---------------------------------------------------------------- rodape */
+.warn{
+  display:flex;gap:9px;align-items:flex-start;background:color-mix(in srgb,var(--warning) 11%,transparent);
+  border:1px solid color-mix(in srgb,var(--warning) 38%,transparent);
+  border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--ink-2);margin-bottom:9px;
+}
+.warn svg{flex:none;margin-top:1px}
+footer{color:var(--ink-3);font-size:12px;margin-top:22px;line-height:1.7}
+footer a{color:var(--series-1)}
+.loading{padding:80px 0;text-align:center;color:var(--ink-3)}
+.err{border-color:color-mix(in srgb,var(--critical) 45%,transparent);
+  background:color-mix(in srgb,var(--critical) 10%,transparent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1 id="title">Funil de Tráfego</h1>
+      <p class="sub" id="subtitle">carregando…</p>
+    </div>
+    <div class="top-right">
+      <span class="badge tax" id="taxBadge" title="Imposto obrigatório do Meta Ads aplicado sobre o gasto bruto">imposto —</span>
+      <span class="badge"><span class="dot"></span><span id="updated">—</span></span>
+      <button class="btn" id="reload" title="Buscar a última versão dos dados">Atualizar</button>
+      <button class="btn" id="theme" title="Alternar tema claro/escuro">Claro</button>
+    </div>
+  </header>
+
+  <div id="app"><div class="loading">Carregando dados…</div></div>
+</div>
+
+<div id="tip" role="tooltip"></div>
+
+<script>
+"use strict";
+const BUILD_ID = "__BUILD_ID__";
+const TAX_NOTE = "todas as métricas usam o gasto COM imposto";
+
+/* ============================================================ formatação */
+const nfInt   = new Intl.NumberFormat("pt-BR", {maximumFractionDigits:0});
+const nf1     = new Intl.NumberFormat("pt-BR", {minimumFractionDigits:1, maximumFractionDigits:1});
+const nf2     = new Intl.NumberFormat("pt-BR", {minimumFractionDigits:2, maximumFractionDigits:2});
+const nfTax   = new Intl.NumberFormat("pt-BR", {maximumFractionDigits:4});
+const money   = v => (v < 0 ? "−R$ " : "R$ ") + nf2.format(Math.abs(v||0));
+const money0  = v => (v < 0 ? "−R$ " : "R$ ") + nfInt.format(Math.abs(v||0));
+const taxStr  = v => nfTax.format(v||1);
+const pct     = v => nf2.format((v||0)*100) + "%";
+const pct1    = v => nf1.format((v||0)*100) + "%";
+const int     = v => nfInt.format(Math.round(v||0));
+const x2      = v => nf2.format(v||0) + "x";
+const dash    = f => v => (v===null || v===undefined || !isFinite(v)) ? "—" : f(v);
+
+const M  = {money:dash(money), money0:dash(money0), pct:dash(pct), pct1:dash(pct1),
+            int:dash(int), x:dash(x2), n2:dash(v=>nf2.format(v))};
+
+const dayBR   = iso => { const [y,m,d] = iso.split("-"); return `${d}/${m}`; };
+const dayFull = iso => { const [y,m,d] = iso.split("-"); return `${d}/${m}/${y}`; };
+const addDays = (iso,n) => { const d = new Date(iso+"T12:00:00Z"); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
+const diffDays= (a,b) => Math.round((new Date(b+"T12:00:00Z") - new Date(a+"T12:00:00Z"))/864e5);
+const escape_ = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ============================================================ estado */
+let DATA = null;
+let STATE = {from:null, to:null, compare:true, level:"campaign", metric:"spend",
+             sort:{key:"spend", dir:-1}, preset:"all"};
+
+/* ============================================================ métricas
+   Regra única do projeto: gasto = gasto bruto x imposto. Toda métrica derivada
+   abaixo consome `spend`, então nenhuma delas pode escapar do imposto.        */
+function blank(){
+  return {spend:0, gross:0, imp:0, clk:0, lpv:0, ic:0, sales:0, rev:0};
+}
+function accAd(t, r, tax){
+  t.gross += r.spend; t.spend += r.spend * tax;
+  t.imp += r.imp; t.clk += r.clk; t.lpv += r.lpv; t.ic += r.ic;
+}
+function accSale(t, s){ t.sales += 1; t.rev += s.v; }
+
+const div = (a,b) => (b > 0 ? a/b : null);
+
+function derive(t){
+  return Object.assign({}, t, {
+    cpm:  div(t.spend*1000, t.imp),
+    ctr:  div(t.clk, t.imp),
+    cpc:  div(t.spend, t.clk),
+    cpl:  div(t.spend, t.lpv),
+    cpic: div(t.spend, t.ic),
+    cac:  div(t.spend, t.sales),
+    conv: div(t.sales, t.clk),
+    convLpv: div(t.sales, t.lpv),
+    roas: div(t.rev, t.spend),
+    ticket: div(t.rev, t.sales),
+    lucro: t.rev - t.spend
+  });
+}
+
+function aggregate(from, to){
+  const tax = DATA.meta.tax, t = blank();
+  for (const r of DATA.ads) if (r.d >= from && r.d <= to) accAd(t, r, tax);
+  for (const s of DATA.sales) if (s.d >= from && s.d <= to) accSale(t, s);
+  return derive(t);
+}
+
+/* Só vendas ligadas a alguma campanha entram nas tabelas de otimização —
+   misturar as sem-UTM inflaria o ROAS de quem não gerou aquela venda. */
+const attributed = s => s.m === "ad" || s.m === "adset" || s.m === "campaign";
+
+function groupBy(level, from, to){
+  const tax = DATA.meta.tax, map = new Map();
+  const keyOf = o => level === "campaign" ? o.c : level === "adset" ? o.c + " ▸ " + o.s : o.c + " ▸ " + o.s + " ▸ " + o.a;
+  const labelOf = o => level === "campaign" ? o.c : level === "adset" ? o.s : o.a;
+  const parentOf = o => level === "campaign" ? "" : level === "adset" ? o.c : o.c + "  ▸  " + o.s;
+
+  const touch = o => {
+    const k = keyOf(o);
+    if (!map.has(k)) map.set(k, Object.assign(blank(), {key:k, label:labelOf(o), parent:parentOf(o)}));
+    return map.get(k);
+  };
+  for (const r of DATA.ads) if (r.d >= from && r.d <= to) accAd(touch(r), r, tax);
+  for (const s of DATA.sales) if (s.d >= from && s.d <= to && attributed(s)) accSale(touch(s), s);
+  return [...map.values()].map(derive);
+}
+
+function daily(from, to){
+  const tax = DATA.meta.tax, map = new Map();
+  for (let d = from; d <= to; d = addDays(d,1)) map.set(d, Object.assign(blank(), {d}));
+  for (const r of DATA.ads) if (map.has(r.d)) accAd(map.get(r.d), r, tax);
+  for (const s of DATA.sales) if (map.has(s.d)) accSale(map.get(s.d), s);
+  return [...map.values()].map(derive);
+}
+
+/* ============================================================ SVG helpers */
+const NS = "http://www.w3.org/2000/svg";
+const el = (n, at={}) => { const e = document.createElementNS(NS,n); for (const k in at) e.setAttribute(k, at[k]); return e; };
+
+/** Escala "bonita": topo arredondado para 1/2/5 x 10^n. */
+function niceMax(v){
+  if (!(v > 0)) return 1;
+  const e = Math.pow(10, Math.floor(Math.log10(v)));
+  const f = v/e;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e;
+}
+function ticks(max, n=4){
+  const out = [];
+  for (let i = 0; i <= n; i++) out.push(max*i/n);
+  return out;
+}
+/** Densidade de rótulos do eixo x: nunca deixa os dias se atropelarem. */
+function labelStep(count, width){ return Math.max(1, Math.ceil(count / Math.max(2, Math.floor(width/58)))); }
+
+const TIP = document.getElementById("tip");
+function showTip(html, ev){
+  TIP.innerHTML = html; TIP.style.opacity = 1;
+  const r = TIP.getBoundingClientRect();
+  let x = ev.clientX + 14, y = ev.clientY - r.height - 12;
+  if (x + r.width > innerWidth - 8) x = ev.clientX - r.width - 14;
+  if (y < 8) y = ev.clientY + 18;
+  TIP.style.left = x + "px"; TIP.style.top = y + "px";
+}
+const hideTip = () => { TIP.style.opacity = 0; };
+
+/**
+ * Gráfico de barras diário. Uma série só — a identidade vem do título, então
+ * não leva legenda (a regra da legenda começa em 2 séries).
+ */
+function barChart(host, rows, key, color, fmt, tipLabel){
+  host.innerHTML = "";
+  const W = Math.max(320, host.clientWidth || 520), H = 208;
+  const P = {t:14, r:10, b:26, l:56};
+  const iw = W - P.l - P.r, ih = H - P.t - P.b;
+  const svg = el("svg", {class:"chart", viewBox:`0 0 ${W} ${H}`, width:"100%", height:H, role:"img"});
+
+  const max = niceMax(Math.max(...rows.map(r => r[key] || 0), 0));
+  const y = v => P.t + ih - (max > 0 ? (v/max)*ih : 0);
+
+  for (const t of ticks(max)){
+    svg.appendChild(el("line", {class:"gl", x1:P.l, x2:P.l+iw, y1:y(t), y2:y(t)}));
+    const tx = el("text", {x:P.l-8, y:y(t)+4, "text-anchor":"end"});
+    tx.textContent = fmt(t); svg.appendChild(tx);
+  }
+  svg.appendChild(el("line", {class:"ax", x1:P.l, x2:P.l+iw, y1:P.t+ih, y2:P.t+ih}));
+
+  const slot = iw/Math.max(1, rows.length);
+  const bw = Math.max(3, Math.min(46, slot - (rows.length > 40 ? 1 : 2)));  // gap de 2px entre barras
+  const step = labelStep(rows.length, iw);
+
+  rows.forEach((r,i) => {
+    const cx = P.l + slot*i + slot/2;
+    const v = r[key] || 0, h = Math.max(v > 0 ? 2 : 0, P.t + ih - y(v));
+    if (h > 0){
+      const bar = el("rect", {x:cx-bw/2, y:P.t+ih-h, width:bw, height:h, fill:color, rx:Math.min(4,bw/2)});
+      svg.appendChild(bar);
+    }
+    if (i % step === 0 || i === rows.length-1){
+      const tx = el("text", {x:cx, y:H-8, "text-anchor":"middle"});
+      tx.textContent = dayBR(r.d); svg.appendChild(tx);
+    }
+    const hit = el("rect", {class:"hit", x:P.l+slot*i, y:P.t, width:slot, height:ih});
+    hit.addEventListener("mousemove", ev => showTip(
+      `<b>${dayFull(r.d)}</b><div class="r"><em><i style="background:${color}"></i>${tipLabel}</em><strong>${fmt(v)}</strong></div>`, ev));
+    hit.addEventListener("mouseleave", hideTip);
+    svg.appendChild(hit);
+  });
+  host.appendChild(svg);
+}
+
+/**
+ * Gráfico de linhas com crosshair. Recebe 1 ou 2 séries (atual / anterior);
+ * com 2, a legenda acima é obrigatória e a série anterior vai tracejada — a
+ * identidade nunca depende só da cor.
+ */
+function lineChart(host, labels, series, fmt){
+  host.innerHTML = "";
+  const W = Math.max(320, host.clientWidth || 900), H = 260;
+  const P = {t:16, r:14, b:28, l:64};
+  const iw = W - P.l - P.r, ih = H - P.t - P.b;
+  const svg = el("svg", {class:"chart", viewBox:`0 0 ${W} ${H}`, width:"100%", height:H, role:"img"});
+
+  const all = series.flatMap(s => s.values.filter(v => v !== null && isFinite(v)));
+  const max = niceMax(Math.max(...all, 0));
+  const n = labels.length;
+  const x = i => n === 1 ? P.l + iw/2 : P.l + (iw*i)/(n-1);
+  const y = v => P.t + ih - (max > 0 ? (v/max)*ih : 0);
+
+  for (const t of ticks(max)){
+    svg.appendChild(el("line", {class:"gl", x1:P.l, x2:P.l+iw, y1:y(t), y2:y(t)}));
+    const tx = el("text", {x:P.l-8, y:y(t)+4, "text-anchor":"end"});
+    tx.textContent = fmt(t); svg.appendChild(tx);
+  }
+  svg.appendChild(el("line", {class:"ax", x1:P.l, x2:P.l+iw, y1:P.t+ih, y2:P.t+ih}));
+
+  const step = labelStep(n, iw);
+  labels.forEach((lb,i) => {
+    if (i % step === 0 || i === n-1){
+      const tx = el("text", {x:x(i), y:H-8, "text-anchor":"middle"});
+      tx.textContent = lb; svg.appendChild(tx);
+    }
+  });
+
+  series.forEach(s => {
+    const pts = s.values.map((v,i) => [x(i), y(v||0)]);
+    const d = pts.map((p,i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+    const path = el("path", {d, fill:"none", stroke:s.color, "stroke-width":2,
+      "stroke-linejoin":"round", "stroke-linecap":"round"});
+    if (s.dashed) path.setAttribute("stroke-dasharray", "5 4");
+    svg.appendChild(path);
+    // anel de 2px na cor da superfície onde as séries se cruzam
+    if (n <= 40) pts.forEach(p => {
+      svg.appendChild(el("circle", {cx:p[0], cy:p[1], r:4, fill:s.color,
+        stroke:"var(--card)", "stroke-width":2}));
+    });
+  });
+
+  const cross = el("line", {class:"cross", y1:P.t, y2:P.t+ih});
+  svg.appendChild(cross);
+  const hit = el("rect", {class:"hit", x:P.l-4, y:P.t, width:iw+8, height:ih});
+  hit.addEventListener("mousemove", ev => {
+    const box = svg.getBoundingClientRect();
+    const rel = ((ev.clientX - box.left)/box.width)*W;
+    const i = Math.max(0, Math.min(n-1, Math.round(n === 1 ? 0 : ((rel-P.l)/iw)*(n-1))));
+    cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.style.opacity = 1;
+    showTip(`<b>${series[0].fullLabels ? series[0].fullLabels[i] : labels[i]}</b>` +
+      series.map(s => `<div class="r"><em><i style="background:${s.color}"></i>${s.name}</em>` +
+        `<strong>${fmt(s.values[i])}</strong></div>` +
+        (s.fullLabels && s !== series[0] && s.fullLabels[i] ? `<div class="r"><em style="font-size:11px;opacity:.7">${s.fullLabels[i]}</em></div>` : "")).join(""), ev);
+  });
+  hit.addEventListener("mouseleave", () => { cross.style.opacity = 0; hideTip(); });
+  svg.appendChild(hit);
+  host.appendChild(svg);
+}
+
+/* ============================================================ render */
+function setPeriod(from, to, preset){
+  STATE.from = from; STATE.to = to; STATE.preset = preset || "custom";
+  document.getElementById("from").value = from;
+  document.getElementById("to").value = to;
+  document.querySelectorAll("[data-preset]").forEach(b =>
+    b.setAttribute("aria-pressed", b.dataset.preset === STATE.preset));
+  render();
+}
+
+function deltaHTML(cur, prev, fmt, higherIsBetter){
+  if (!STATE.compare) return "";
+  const bad = higherIsBetter === false;
+  if (prev === null || prev === undefined || !isFinite(prev) || prev === 0){
+    if (cur === null || !isFinite(cur) || cur === 0) return `<span class="flat">—</span> vs anterior`;
+    return `<span class="up">novo</span> vs anterior (0)`;
+  }
+  if (cur === null || !isFinite(cur)) return `<span class="flat">—</span> vs ${fmt(prev)}`;
+  const ch = (cur - prev)/Math.abs(prev);
+  const cls = Math.abs(ch) < 0.0005 ? "flat" : ((ch > 0) !== bad ? "up" : "down");
+  const arrow = Math.abs(ch) < 0.0005 ? "→" : (ch > 0 ? "▲" : "▼");
+  return `<span class="${cls}">${arrow} ${nf1.format(Math.abs(ch)*100)}%</span> vs ${fmt(prev)}`;
+}
+
+const KPI_DEFS = [
+  {k:"spend", label:"Investimento", fmt:M.money, better:null, hint:"com imposto"},
+  {k:"rev",   label:"Receita",      fmt:M.money, better:true},
+  {k:"roas",  label:"ROAS",         fmt:M.x,     better:true},
+  {k:"lucro", label:"Resultado",    fmt:M.money, better:true, hint:"receita − investimento"},
+  {k:"sales", label:"Vendas",       fmt:M.int,   better:true},
+  {k:"cac",   label:"CAC",          fmt:M.money, better:false, hint:"custo por venda"},
+  {k:"cpl",   label:"CPL",          fmt:M.money, better:false, hint:"custo por page view"},
+  {k:"cpc",   label:"CPC",          fmt:M.money, better:false},
+  {k:"cpm",   label:"CPM",          fmt:M.money, better:false},
+  {k:"ctr",   label:"CTR",          fmt:M.pct,   better:true},
+  {k:"conv",  label:"Conversão",    fmt:M.pct,   better:true, hint:"vendas / cliques"},
+  {k:"ticket",label:"Ticket médio", fmt:M.money, better:true}
+];
+
+const COLS = [
+  {k:"label", label:"", fmt:null},
+  {k:"spend", label:"Investimento", fmt:M.money},
+  {k:"imp",   label:"Impr.",  fmt:M.int},
+  {k:"clk",   label:"Cliques",fmt:M.int},
+  {k:"lpv",   label:"P. Views", fmt:M.int},
+  {k:"sales", label:"Vendas", fmt:M.int},
+  {k:"rev",   label:"Receita",fmt:M.money},
+  {k:"cpm",   label:"CPM",    fmt:M.money},
+  {k:"ctr",   label:"CTR",    fmt:M.pct1},
+  {k:"cpc",   label:"CPC",    fmt:M.money},
+  {k:"cpl",   label:"CPL",    fmt:M.money},
+  {k:"cac",   label:"CAC",    fmt:M.money, scale:"low"},
+  {k:"conv",  label:"Conv.",  fmt:M.pct1},
+  {k:"roas",  label:"ROAS",   fmt:M.x, scale:"high"},
+  {k:"lucro", label:"Result.",fmt:M.money}
+];
+
+const METRICS = [
+  {k:"spend", label:"Investimento", fmt:M.money0},
+  {k:"sales", label:"Vendas",       fmt:M.int},
+  {k:"rev",   label:"Receita",      fmt:M.money0},
+  {k:"roas",  label:"ROAS",         fmt:M.x},
+  {k:"cac",   label:"CAC",          fmt:M.money0},
+  {k:"cpl",   label:"CPL",          fmt:M.money},
+  {k:"cpc",   label:"CPC",          fmt:M.money},
+  {k:"cpm",   label:"CPM",          fmt:M.money0},
+  {k:"ctr",   label:"CTR",          fmt:M.pct1},
+  {k:"imp",   label:"Impressões",   fmt:M.int},
+  {k:"clk",   label:"Cliques",      fmt:M.int},
+  {k:"lpv",   label:"Page Views",   fmt:M.int}
+];
+
+function render(){
+  const {from, to} = STATE;
+  const len = diffDays(from, to) + 1;
+  const pTo = addDays(from, -1), pFrom = addDays(pTo, -(len-1));
+
+  const cur  = aggregate(from, to);
+  const prev = aggregate(pFrom, pTo);
+
+  /* ---- KPIs ---- */
+  document.getElementById("kpis").innerHTML = KPI_DEFS.map(d => `
+    <div class="kpi">
+      <div class="k">${d.label}${d.hint ? `<span style="font-weight:500;text-transform:none;letter-spacing:0;opacity:.75">· ${d.hint}</span>` : ""}</div>
+      <div class="v">${d.fmt(cur[d.k])}</div>
+      <div class="d">${deltaHTML(cur[d.k], prev[d.k], d.fmt, d.better)}</div>
+    </div>`).join("");
+
+  document.getElementById("cmpNote").textContent = STATE.compare
+    ? `comparando com ${dayFull(pFrom)} – ${dayFull(pTo)} (${len} dia${len>1?"s":""})`
+    : `${len} dia${len>1?"s":""} selecionado${len>1?"s":""}`;
+
+  /* ---- funil ---- */
+  const stages = [
+    {n:"Impressões",  v:cur.imp, f:M.int,  c:"var(--f1)", cost:cur.cpm,  costLabel:"CPM"},
+    {n:"Cliques",     v:cur.clk, f:M.int,  c:"var(--f2)", cost:cur.cpc,  costLabel:"CPC"},
+    {n:"Page views",  v:cur.lpv, f:M.int,  c:"var(--f3)", cost:cur.cpl,  costLabel:"CPL"},
+    {n:"Checkouts",   v:cur.ic,  f:M.int,  c:"var(--f4)", cost:cur.cpic, costLabel:"C/checkout"},
+    {n:"Vendas",      v:cur.sales,f:M.int, c:"var(--f5)", cost:cur.cac,  costLabel:"CAC"}
+  ];
+  // Impressoes sao ~3 ordens de grandeza maiores que vendas: numa escala linear
+  // todos os estagios abaixo do topo viram um risco de 1px. Largura em log10,
+  // declarado na nota do painel; os valores absolutos ficam sempre a direita.
+  const lg = v => Math.log10(Math.max(0, v) + 1);
+  const top = Math.max(...stages.map(s => lg(s.v)), 1);
+  document.getElementById("funnel").innerHTML = `
+    <div class="stage head">
+      <div class="name">Investimento</div>
+      <div class="track"><div class="fill" style="width:100%;background:color-mix(in srgb,var(--ink-3) 26%,transparent)"></div></div>
+      <div class="val">${M.money(cur.spend)}<small>com imposto ×${taxStr(DATA.meta.tax)}</small></div>
+    </div>` + stages.map((s,i) => {
+      const prevStage = i === 0 ? null : stages[i-1];
+      const rate = prevStage && prevStage.v > 0 ? s.v/prevStage.v : null;
+      return `<div class="stage">
+        <div class="name">${s.n}${rate !== null ? `<br><span style="font-size:11px;color:var(--ink-3)">${M.pct1(rate)} do anterior</span>` : ""}</div>
+        <div class="track"><div class="fill" style="width:${Math.max(0.4,(lg(s.v)/top)*100)}%;background:${s.c}"></div></div>
+        <div class="val">${s.f(s.v)}<small>${s.costLabel} ${M.money(s.cost)}</small></div>
+      </div>`;
+    }).join("");
+
+  /* ---- gráficos diários ---- */
+  const rows = daily(from, to);
+  const pRows = daily(pFrom, pTo);
+  barChart(document.getElementById("chSpend"), rows, "spend", "var(--series-1)", M.money0, "Investimento");
+  barChart(document.getElementById("chSales"), rows, "sales", "var(--series-3)", M.int, "Vendas");
+
+  const met = METRICS.find(m => m.k === STATE.metric) || METRICS[0];
+  const series = [{name:`Período atual`, color:"var(--series-1)",
+                   values:rows.map(r => r[met.k]), fullLabels:rows.map(r => dayFull(r.d))}];
+  if (STATE.compare){
+    // Alinhados por posição no período, não por data — é o que torna a curva comparável.
+    series.push({name:"Período anterior", color:"var(--series-2)", dashed:true,
+                 values:rows.map((_,i) => pRows[i] ? pRows[i][met.k] : null),
+                 fullLabels:rows.map((_,i) => pRows[i] ? dayFull(pRows[i].d) : "")});
+  }
+  document.getElementById("legend").innerHTML = series.length > 1
+    ? series.map(s => `<span style="color:${s.color}"><i class="${s.dashed?"dash":""}" style="background:${s.dashed?"transparent":s.color}"></i><span style="color:var(--ink-2)">${s.name}</span></span>`).join("")
+    : "";
+  lineChart(document.getElementById("chMetric"), rows.map(r => dayBR(r.d)), series, met.fmt);
+  document.getElementById("metricTitle").textContent = met.label + " por dia";
+
+  renderTable();
+}
+
+function renderTable(){
+  const list = groupBy(STATE.level, STATE.from, STATE.to);
+  const {key, dir} = STATE.sort;
+  list.sort((a,b) => {
+    if (key === "label") return dir * a.label.localeCompare(b.label,"pt-BR");
+    const av = a[key], bv = b[key];
+    const an = av === null || !isFinite(av), bn = bv === null || !isFinite(bv);
+    if (an && bn) return 0;
+    if (an) return 1;              // vazio sempre no fim, nas duas direções
+    if (bn) return -1;
+    return dir * (av - bv);
+  });
+
+  // Escalas de cor por coluna (redundantes: o número está sempre visível).
+  const scales = {};
+  for (const c of COLS.filter(c => c.scale)){
+    const vals = list.filter(r => r.spend > 0 && r[c.k] !== null && isFinite(r[c.k])).map(r => r[c.k]);
+    if (vals.length > 1) scales[c.k] = {min:Math.min(...vals), max:Math.max(...vals), dir:c.scale};
+  }
+  const shade = (k, v) => {
+    const s = scales[k];
+    if (!s || v === null || !isFinite(v) || s.max === s.min) return "";
+    let t = (v - s.min)/(s.max - s.min);
+    if (s.dir === "low") t = 1 - t;                       // menor custo = mais forte
+    if (t < 0.15) return "";
+    return `background:color-mix(in srgb,var(--scale-ink) ${Math.round(t*30)}%,transparent)`;
+  };
+
+  const tot = derive(list.reduce((t,r) => {
+    for (const k of ["spend","gross","imp","clk","lpv","ic","sales","rev"]) t[k] += r[k];
+    return t;
+  }, blank()));
+
+  const head = COLS.map(c => {
+    const active = STATE.sort.key === c.k;
+    const arw = active ? (dir === 1 ? "▲" : "▼") : "▾";
+    const label = c.k === "label"
+      ? ({campaign:"Campanha", adset:"Conjunto", ad:"Anúncio"})[STATE.level]
+      : c.label;
+    return `<th data-k="${c.k}"${active ? " data-active" : ""} title="ordenar">${label}<span class="arw">${arw}</span></th>`;
+  }).join("");
+
+  const body = list.map(r => `<tr${r.spend > 0 ? "" : ' class="muted-row"'}>
+      <td>${escape_(r.label)}${r.parent ? `<br><span style="font-size:11px;color:var(--ink-3);font-weight:450">${escape_(r.parent)}</span>` : ""}</td>
+      ${COLS.slice(1).map(c => {
+        const st = c.scale ? shade(c.k, r[c.k]) : "";
+        const v = c.fmt(r[c.k]);
+        return `<td>${st ? `<span class="cell-scale" style="${st}">${v}</span>` : v}</td>`;
+      }).join("")}
+    </tr>`).join("");
+
+  document.getElementById("tbl").innerHTML = `
+    <thead><tr>${head}</tr></thead>
+    <tbody>${body || `<tr><td colspan="${COLS.length}" style="text-align:center;color:var(--ink-3);padding:32px">Nenhum dado no período.</td></tr>`}</tbody>
+    <tfoot><tr><td>Total (${list.length})</td>${COLS.slice(1).map(c => `<td>${c.fmt(tot[c.k])}</td>`).join("")}</tr></tfoot>`;
+
+  document.querySelectorAll("#tbl thead th").forEach(th => {
+    th.onclick = () => {
+      const k = th.dataset.k;
+      STATE.sort = (STATE.sort.key === k) ? {key:k, dir:-STATE.sort.dir} : {key:k, dir:k === "label" ? 1 : -1};
+      renderTable();
+    };
+  });
+}
+
+/* ============================================================ shell */
+function shell(){
+  const m = DATA.meta;
+  document.getElementById("title").textContent = m.title;
+  document.getElementById("subtitle").innerHTML =
+    `${escape_(m.platform)} · dados de ${dayFull(m.date_min)} a ${dayFull(m.date_max)} · ` +
+    `${int(m.counts.ads_rows)} linhas de anúncio · ${int(m.counts.sales_rows)} vendas`;
+  document.getElementById("updated").textContent = "atualizado " + m.generated_at_br;
+  document.getElementById("taxBadge").textContent =
+    m.tax === 1 ? "sem imposto" : `imposto ×${taxStr(m.tax)} aplicado`;
+  document.getElementById("taxBadge").title = m.tax === 1
+    ? "Nenhum imposto aplicado sobre o gasto."
+    : `Gasto bruto × ${m.tax} — ${TAX_NOTE}.`;
+
+  const at = m.counts.attribution;
+  const okSales = at.ad + at.adset + at.campaign;
+
+  document.getElementById("app").innerHTML = `
+    <div class="controls">
+      <div class="grp">
+        <label>Período</label>
+        <button class="btn" data-preset="7">7 dias</button>
+        <button class="btn" data-preset="14">14 dias</button>
+        <button class="btn" data-preset="30">30 dias</button>
+        <button class="btn" data-preset="all">Tudo</button>
+      </div>
+      <div class="grp">
+        <input type="date" id="from" min="${m.date_min}" max="${m.date_max}">
+        <span style="color:var(--ink-3)">até</span>
+        <input type="date" id="to" min="${m.date_min}" max="${m.date_max}">
+      </div>
+      <div class="spacer"></div>
+      <div class="grp">
+        <button class="btn on" id="cmp" aria-pressed="true">Comparar c/ período anterior</button>
+        <span style="font-size:12px;color:var(--ink-3)" id="cmpNote"></span>
+      </div>
+    </div>
+
+    <div class="kpis" id="kpis"></div>
+
+    <div class="grid-funnel">
+      <div class="panel">
+        <h2>Funil completo</h2>
+        <p class="note">Investimento → Impressões → Cliques → Page views → Checkouts → Vendas.
+          Largura das barras em <strong>escala logarítmica</strong> (impressões são ~3 ordens de grandeza
+          maiores que vendas); os valores absolutos, a taxa de passagem entre etapas e o custo por
+          resultado estão escritos ao lado.</p>
+        <div class="funnel" id="funnel"></div>
+      </div>
+      <div class="panel">
+        <h2>Investimento e vendas por dia</h2>
+        <p class="note">Duas escalas independentes, lado a lado — nunca sobrepostas num eixo duplo.</p>
+        <div id="chSpend" style="margin-bottom:6px"></div>
+        <div id="chSales"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 id="metricTitle">Investimento por dia</h2>
+      <p class="note">Escolha a métrica; com a comparação ligada, a linha tracejada é o período anterior alinhado dia a dia.</p>
+      <div class="tabs" id="metricTabs">
+        ${METRICS.map(x => `<button class="btn" data-metric="${x.k}">${x.label}</button>`).join("")}
+      </div>
+      <div class="legend" id="legend"></div>
+      <div id="chMetric"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Otimização — onde o resultado sai mais barato</h2>
+      <p class="note">
+        Clique em qualquer cabeçalho para ordenar. Sombreado mais forte = melhor
+        (CAC mais barato, ROAS mais alto). Linhas em itálico têm venda atribuída mas
+        nenhum gasto no período. ${okSales} de ${m.counts.sales_rows} vendas estão atribuídas aqui;
+        ${at.none + at.unmatched} sem UTM utilizável entram no total geral, mas não nesta tabela.
+      </p>
+      <div class="tabs">
+        <button class="btn" data-level="campaign">Por campanha</button>
+        <button class="btn" data-level="adset">Por conjunto</button>
+        <button class="btn" data-level="ad">Por anúncio</button>
+      </div>
+      <div class="tblwrap"><table id="tbl"></table></div>
+    </div>
+
+    ${(m.warnings||[]).map(w => `<div class="warn"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="var(--warning)" stroke-width="1.6"><path d="M8 1.8 15 14H1L8 1.8Z" stroke-linejoin="round"/><path d="M8 6.2v3.4M8 11.8v.05" stroke-linecap="round"/></svg><span>${escape_(w)}</span></div>`).join("")}
+
+    <footer>
+      Gasto bruto do período completo: ${money(DATA.ads.reduce((s,r)=>s+r.spend,0))} ·
+      com imposto ×${taxStr(m.tax)}: ${money(DATA.ads.reduce((s,r)=>s+r.spend,0)*m.tax)}.
+      ${TAX_NOTE[0].toUpperCase()+TAX_NOTE.slice(1)}.<br>
+      Vendas atribuídas por UTM → hierarquia do Meta: ${at.ad} no anúncio, ${at.adset} até o conjunto,
+      ${at.campaign} até a campanha, ${at.unmatched} com UTM desconhecida, ${at.none} sem UTM.
+      A venda entra no dia em que foi paga, não no dia do clique.<br>
+      Fontes (somente leitura):
+      <a href="${m.ads_url}" target="_blank" rel="noopener">planilha de anúncios</a> ·
+      <a href="${m.sales_url}" target="_blank" rel="noopener">planilha de vendas</a> (aba ${escape_(m.sales_tab)}).
+      Build ${BUILD_ID}.
+    </footer>`;
+
+  // --- listeners ---
+  document.querySelectorAll("[data-preset]").forEach(b => b.onclick = () => {
+    if (b.dataset.preset === "all") return setPeriod(m.date_min, m.date_max, "all");
+    const n = +b.dataset.preset;
+    const from = addDays(m.date_max, -(n-1));
+    setPeriod(from < m.date_min ? m.date_min : from, m.date_max, b.dataset.preset);
+  });
+  const clampDates = () => {
+    let f = document.getElementById("from").value, t = document.getElementById("to").value;
+    if (!f || !t) return;
+    if (f > t) [f,t] = [t,f];
+    setPeriod(f, t, "custom");
+  };
+  document.getElementById("from").onchange = clampDates;
+  document.getElementById("to").onchange = clampDates;
+
+  document.getElementById("cmp").onclick = e => {
+    STATE.compare = !STATE.compare;
+    e.currentTarget.classList.toggle("on", STATE.compare);
+    e.currentTarget.setAttribute("aria-pressed", STATE.compare);
+    render();
+  };
+  document.querySelectorAll("[data-level]").forEach(b => b.onclick = () => {
+    STATE.level = b.dataset.level;
+    document.querySelectorAll("[data-level]").forEach(x => x.classList.toggle("on", x === b));
+    renderTable();
+  });
+  document.querySelectorAll("[data-metric]").forEach(b => b.onclick = () => {
+    STATE.metric = b.dataset.metric;
+    document.querySelectorAll("[data-metric]").forEach(x => x.classList.toggle("on", x === b));
+    render();
+  });
+  document.querySelector('[data-level="campaign"]').classList.add("on");
+  document.querySelector('[data-metric="spend"]').classList.add("on");
+
+  setPeriod(m.date_min, m.date_max, "all");
+}
+
+/* ============================================================ boot */
+async function load(){
+  // Cache-bust duplo: o id do build invalida entre deploys, o timestamp
+  // impede que um proxy sirva algo velho dentro do mesmo build.
+  const url = `data.json?v=${BUILD_ID}&t=${Date.now()}`;
+  const r = await fetch(url, {cache:"no-store"});
+  if (!r.ok) throw new Error(`data.json respondeu ${r.status}`);
+  DATA = await r.json();
+  shell();
+}
+
+const applyTheme = t => {
+  document.documentElement.dataset.theme = t;
+  document.getElementById("theme").textContent = t === "dark" ? "Claro" : "Escuro";
+  try { localStorage.setItem("funnel-theme", t); } catch(e){}
+};
+document.getElementById("theme").onclick = () =>
+  applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+try {
+  const saved = localStorage.getItem("funnel-theme");
+  applyTheme(saved || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"));
+} catch(e){ applyTheme("dark"); }
+
+document.getElementById("reload").onclick = () => location.reload();
+
+let rt;
+addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { if (DATA) render(); }, 180); });
+
+load().catch(e => {
+  document.getElementById("app").innerHTML =
+    `<div class="panel err"><h2>Não consegui carregar os dados</h2>
+     <p class="note" style="margin:8px 0 0">${escape_(e.message)}. Verifique se o build do GitHub Actions rodou sem erro.</p></div>`;
+});
+</script>
+</body>
+</html>

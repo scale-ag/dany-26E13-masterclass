@@ -1,0 +1,39 @@
+{
+  "platform": "Meta Ads",
+  "title": "Funil de Tráfego — 26-E13 MasterClass",
+  "currency": "BRL",
+
+  "_comment_tax": "Imposto obrigatorio do Meta Ads. Multiplicador aplicado sobre o gasto bruto. TODAS as metricas usam o gasto COM imposto. Para Google Ads, troque para 1.0.",
+  "tax_multiplier": 1.1385,
+
+  "ads": {
+    "spreadsheet_id": "15ndspQXf1nw5Xvrqqci7VPnXkKFIX8bg87OieNwsAHQ",
+    "sheet_name": null,
+    "columns": {
+      "date": "Day",
+      "campaign": "Campaign Name",
+      "adset": "Ad Set Name",
+      "ad": "Ad Name",
+      "impressions": "Impressions",
+      "clicks": "Link Clicks",
+      "page_views": "Landing Page Views",
+      "checkouts": "Checkouts Initiated",
+      "spend": "Amount Spent"
+    }
+  },
+
+  "sales": {
+    "spreadsheet_id": "1EFghI3MYmjRvIGKUHTermmTb74DZDNcyrI48bZ_39t4",
+    "sheet_name": "26-E13 MASTERCLASS",
+    "columns": {
+      "date": "Data/Hora",
+      "value": "Valor",
+      "status": "Status",
+      "utm_campaign": "UTM Campaign",
+      "utm_adset": "UTM Medium",
+      "utm_ad": "UTM Content"
+    },
+    "_comment_status": "Somente estes status contam como venda. Deixe [] para contar todas as linhas.",
+    "approved_status": ["APPROVED", "APROVADO", "COMPLETE", "COMPLETED", "PAID", "PAGO"]
+  }
+}
