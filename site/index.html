@@ -74,6 +74,12 @@ button,select,input{font:inherit;color:inherit}
 .btn:hover{background:var(--plane);color:var(--ink-1)}
 .btn[aria-pressed="true"],.btn.on{background:var(--brand);border-color:var(--brand);color:var(--brand-ink);font-weight:650}
 
+/* abas de visão: Geral × Tráfego Pago */
+.viewtabs{display:inline-flex;gap:4px;background:var(--card);border:1px solid var(--ring);border-radius:12px;padding:4px;margin-bottom:16px;box-shadow:var(--shadow)}
+.viewtabs button{appearance:none;border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:13.5px;font-weight:600;padding:8px 18px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:background .12s,color .12s;white-space:nowrap}
+.viewtabs button:hover{color:var(--ink-1)}
+.viewtabs button[aria-selected="true"]{background:var(--brand);color:var(--brand-ink)}
+
 /* ---------------------------------------------------------------- filtros */
 .controls{
   display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;
@@ -298,7 +304,7 @@ const escape_ = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",
 
 /* ============================================================ estado */
 let DATA = null;
-let STATE = {from:null, to:null, compare:true, metric:"spend",
+let STATE = {from:null, to:null, compare:true, metric:"spend", mode:"traffic",
              treeSort:{key:"spend", dir:-1}, expanded:new Set(), goal:null, preset:"all"};
 
 /* ============================================================ métricas
@@ -340,18 +346,22 @@ function isTraffic(s){
   const want = String((DATA.meta && DATA.meta.traffic_source) || "meta-ads").trim().toLowerCase();
   return String(s.src || "").trim().toLowerCase() === want;
 }
+/* Aba "Visão Geral" (total) = todas as vendas; "Tráfego Pago" = só meta-ads. */
+const saleInScope = s => STATE.mode === "total" ? true : isTraffic(s);
 
 function aggregate(from, to){
   const tax = DATA.meta.tax, t = blank();
   for (const r of DATA.ads) if (r.d >= from && r.d <= to) accAd(t, r, tax);
-  let allSales = 0, allRev = 0;
+  let allSales = 0, allRev = 0, trafSales = 0, trafRev = 0;
   for (const s of DATA.sales) if (s.d >= from && s.d <= to){
     allSales++; allRev += s.v;
-    if (isTraffic(s)) accSale(t, s);        // só tráfego alimenta as métricas
+    if (isTraffic(s)){ trafSales++; trafRev += s.v; }
+    if (saleInScope(s)) accSale(t, s);       // a aba ativa decide o que entra nas métricas
   }
   const d = derive(t);
-  d.allSales = allSales; d.allRev = allRev;        // total (tráfego + orgânico)
-  d.orgSales = allSales - t.sales; d.orgRev = allRev - t.rev;   // fora do tráfego
+  d.allSales = allSales;   d.allRev = allRev;          // total (tráfego + orgânico)
+  d.trafSales = trafSales; d.trafRev = trafRev;        // só tráfego pago
+  d.orgSales = allSales - trafSales; d.orgRev = allRev - trafRev;  // fora do tráfego
   return d;
 }
 
@@ -378,7 +388,7 @@ function daily(from, to){
   const tax = DATA.meta.tax, map = new Map();
   for (let d = from; d <= to; d = addDays(d,1)) map.set(d, Object.assign(blank(), {d}));
   for (const r of DATA.ads) if (map.has(r.d)) accAd(map.get(r.d), r, tax);
-  for (const s of DATA.sales) if (map.has(s.d) && isTraffic(s)) accSale(map.get(s.d), s);
+  for (const s of DATA.sales) if (map.has(s.d) && saleInScope(s)) accSale(map.get(s.d), s);
   return [...map.values()].map(derive);
 }
 
@@ -740,11 +750,13 @@ function render(){
     : `Sem investimento no período selecionado.`;
 
   const src = escape_(DATA.meta.traffic_source || "meta-ads");
-  document.getElementById("trafficNote").innerHTML =
-    `<span>🎯 <b style="color:var(--ink-1)">Funil de tráfego pago:</b> CAC, ROAS, funil e tabelas usam só as <b style="color:var(--ink-1)">${int(cur.sales)} vendas com utm_source = ${src}</b> no período` +
-    (cur.orgSales > 0
-      ? ` · <b style="color:var(--ink-1)">${int(cur.orgSales)} venda(s)</b> fora do tráfego (orgânico/direto, ${money(cur.orgRev)}) ficam de fora, só como referência.`
-      : ` · nenhuma venda fora do tráfego no período.`) + `</span>`;
+  const ink = "color:var(--ink-1)";
+  document.getElementById("trafficNote").innerHTML = STATE.mode === "total"
+    ? `<span>📊 <b style="${ink}">Visão geral:</b> métricas com <b style="${ink}">todas as ${int(cur.allSales)} vendas</b> do período — ${int(cur.trafSales)} de tráfego pago (${money(cur.trafRev)}) + ${int(cur.orgSales)} orgânicas/diretas (${money(cur.orgRev)}). Troque pra <b style="${ink}">Tráfego Pago</b> pra ver o CAC real da mídia.</span>`
+    : `<span>🎯 <b style="${ink}">Tráfego pago:</b> CAC, ROAS, funil e tabelas usam só as <b style="${ink}">${int(cur.trafSales)} vendas com utm_source = ${src}</b>` +
+      (cur.orgSales > 0
+        ? ` · ${int(cur.orgSales)} orgânica(s)/direta(s) (${money(cur.orgRev)}) ficam de fora, só como referência.`
+        : ` · nenhuma venda fora do tráfego no período.`) + `</span>`;
 
   /* ---- funil (esquerda) ---- */
   renderFunnel(cur);
@@ -903,11 +915,11 @@ function buildTree(from, to){
 
   for (const r of DATA.ads) if (r.d >= from && r.d <= to) accAd(ad(set(camp(r.c), r.s), r.a), r, tax);
   const un = blank();
-  for (const s of DATA.sales) if (s.d >= from && s.d <= to && isTraffic(s)){
+  for (const s of DATA.sales) if (s.d >= from && s.d <= to && saleInScope(s)){
     if (s.m === "ad")            accSale(ad(set(camp(s.c), s.s), s.a), s);
     else if (s.m === "adset")    accSale(set(camp(s.c), s.s), s);
     else if (s.m === "campaign") accSale(camp(s.c), s);
-    else                         accSale(un, s);   // tráfego, mas UTM não casou com nenhuma campanha
+    else                         accSale(un, s);   // sem campanha casada (UTM não bateu / orgânico)
   }
   const roll = (node, key, level) => {
     const kids = [...node.kids.entries()].map(([lbl,ch]) => roll(ch, key + " " + lbl, level + 1));
@@ -982,8 +994,11 @@ function renderOpt(){
 
   const tot = derive(camps.reduce((t,r) => { for (const k of RAW) t[k] += r[k]; return t; }, blank()));
   const rows = flatten(camps);
+  const unLabel = STATE.mode === "total"
+    ? "— sem campanha (orgânico/direto ou UTM não casada) —"
+    : "— tráfego sem campanha casada (UTM não bateu) —";
   const unRow = un.sales > 0
-    ? `<tr class="lv0 muted-row"><td><span class="nm"><span class="caret"></span>— tráfego sem campanha casada (UTM não bateu) —</span></td>${TCOLS.slice(1).map(c => `<td>${c.k === "sales" || c.k === "rev" ? c.fmt(un[c.k]) : "—"}</td>`).join("")}</tr>`
+    ? `<tr class="lv0 muted-row"><td><span class="nm"><span class="caret"></span>${unLabel}</span></td>${TCOLS.slice(1).map(c => `<td>${c.k === "sales" || c.k === "rev" ? c.fmt(un[c.k]) : "—"}</td>`).join("")}</tr>`
     : "";
 
   document.getElementById("tbl").innerHTML = `
@@ -1053,6 +1068,11 @@ function shell(){
   const okSales = at.ad + at.adset + at.campaign;
 
   document.getElementById("app").innerHTML = `
+    <div class="viewtabs" role="tablist" aria-label="Base de análise">
+      <button data-mode="total" role="tab">📊 Visão Geral</button>
+      <button data-mode="traffic" role="tab">🎯 Tráfego Pago</button>
+    </div>
+
     <div class="controls">
       <div class="grp">
         <label>Período</label>
@@ -1190,6 +1210,18 @@ function shell(){
     try { STATE.goal ? localStorage.setItem("funnel-goal", STATE.goal) : localStorage.removeItem("funnel-goal"); } catch(e){}
     renderFunnel(aggregate(STATE.from, STATE.to));
   };
+
+  // abas de visão: Geral (todas as vendas) × Tráfego Pago (utm_source=meta-ads)
+  try { const mv = localStorage.getItem("funnel-mode"); if (mv === "total" || mv === "traffic") STATE.mode = mv; } catch(e){}
+  document.querySelectorAll("[data-mode]").forEach(b => {
+    b.setAttribute("aria-selected", b.dataset.mode === STATE.mode);
+    b.onclick = () => {
+      STATE.mode = b.dataset.mode;
+      try { localStorage.setItem("funnel-mode", STATE.mode); } catch(e){}
+      document.querySelectorAll("[data-mode]").forEach(x => x.setAttribute("aria-selected", x.dataset.mode === STATE.mode));
+      render();
+    };
+  });
 
   setPeriod(m.date_min, m.date_max, "all");
 }
