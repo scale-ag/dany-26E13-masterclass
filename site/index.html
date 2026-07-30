@@ -193,8 +193,9 @@ tfoot td{font-weight:650;color:var(--ink-1);border-top:1px solid var(--axis);bor
 .hbar .hb-fill{height:100%;border-radius:4px;transition:width .4s cubic-bezier(.4,0,.2,1)}
 
 /* ---------------------------------------------------------------- hero invest→receita→roas */
-.hero{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;align-items:stretch;margin-bottom:6px}
-@media (max-width:860px){.hero{grid-template-columns:1fr;gap:8px}.hero .op{display:none}}
+.hero{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;gap:6px;align-items:stretch;margin-bottom:6px}
+@media (max-width:1040px){.hero{grid-template-columns:1fr 1fr;gap:8px}.hero .op{display:none}}
+@media (max-width:560px){.hero{grid-template-columns:1fr}}
 .hero .hcard{background:var(--card);border:1px solid var(--ring);border-radius:14px;padding:15px 17px;box-shadow:var(--shadow);position:relative;overflow:hidden}
 .hero .hcard.roas{border-top:3px solid var(--brand)}
 .hero .hk{font-size:12px;color:var(--ink-2);font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:8px}
@@ -624,6 +625,9 @@ const SUB = [
   {k:"conv",  label:"Conversão",    fmt:M.pct,   better:true, hint:"vendas/cliques"}
 ];
 
+/* Limite de CAC definido pelo cliente (R$). CAC acima disso pinta o card de vermelho. */
+const CAC_GOAL = 110;
+
 /* Score de saúde: metas de referência (edite os good/bad livremente).
    Cada métrica vira um sub-score 0–100; a saúde geral é a média deles. */
 const HEALTH = [
@@ -707,7 +711,13 @@ function render(){
       </div>
     </div>`;
 
-  /* ---- hero: investimento → receita → roas ---- */
+  /* ---- hero: investimento → receita = roas · cac ---- */
+  const cacOk = cur.cac !== null && isFinite(cur.cac) && cur.cac <= CAC_GOAL;
+  const cacCol = (cur.cac === null || !isFinite(cur.cac)) ? "var(--ink-3)" : (cacOk ? "var(--good-text)" : "var(--critical)");
+  const cacStatus = (cur.cac === null || !isFinite(cur.cac))
+    ? `<span class="flat">sem vendas no período</span>`
+    : (cacOk ? `<span class="up">✓ dentro do limite (${M.money(CAC_GOAL)})</span>`
+             : `<span class="down">▲ acima do limite (${M.money(CAC_GOAL)})</span>`);
   document.getElementById("hero").innerHTML = `
     <div class="hcard"><div class="hk">💸 Investimento <small>com imposto</small></div>
       <div class="hv">${M.money(cur.spend)}</div><div class="hd">${miniDelta(cur.spend,prev.spend,null)} vs anterior</div></div>
@@ -716,7 +726,10 @@ function render(){
       <div class="hv g">${M.money(cur.rev)}</div><div class="hd">${miniDelta(cur.rev,prev.rev,true)} vs anterior</div></div>
     <div class="op">=</div>
     <div class="hcard roas"><div class="hk">📈 ROAS <small>retorno</small></div>
-      <div class="hv">${M.x(cur.roas)}</div><div class="hd">${miniDelta(cur.roas,prev.roas,true)} vs anterior</div></div>`;
+      <div class="hv">${M.x(cur.roas)}</div><div class="hd">${miniDelta(cur.roas,prev.roas,true)} vs anterior</div></div>
+    <div class="op">·</div>
+    <div class="hcard cac" style="border-top:3px solid ${cacCol}"><div class="hk">🎯 CAC <small>limite ${M.money(CAC_GOAL)}</small></div>
+      <div class="hv" style="color:${cacCol}">${M.money(cur.cac)}</div><div class="hd">${cacStatus}</div></div>`;
   document.getElementById("heroLine").innerHTML = (cur.spend > 0 && cur.roas !== null)
     ? `Cada <b>R$ 1,00</b> investido virou <b>${M.money(cur.roas)}</b> de receita · ${M.money(cur.spend)} → ${M.money(cur.rev)} no período${STATE.compare ? " · variações vs. período anterior" : ""}.`
     : `Sem investimento no período selecionado.`;
