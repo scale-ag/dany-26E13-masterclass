@@ -29,11 +29,14 @@
       "date": "Data/Hora",
       "value": "Valor",
       "status": "Status",
+      "utm_source": "UTM Source",
       "utm_campaign": "UTM Campaign",
       "utm_adset": "UTM Medium",
       "utm_ad": "UTM Content"
     },
     "_comment_status": "Somente estes status contam como venda. Deixe [] para contar todas as linhas.",
-    "approved_status": ["APPROVED", "APROVADO", "COMPLETE", "COMPLETED", "PAID", "PAGO"]
+    "approved_status": ["APPROVED", "APROVADO", "COMPLETE", "COMPLETED", "PAID", "PAGO"],
+    "_comment_traffic": "Vendas de trafego pago = utm_source igual a este valor (case-insensitive). O funil, CAC, ROAS etc. usam SO essas vendas; o restante (organico/direto) entra so como referencia.",
+    "traffic_source": "meta-ads"
   }
 }

@@ -203,6 +203,7 @@ def load_sales(cfg, warnings):
         rows.append({
             "d": d,
             "v": num(col(r, c["value"])),
+            "src": re.sub(r"\s+", " ", str(col(r, c.get("utm_source", "")) or "").strip()),
             "uc": re.sub(r"\s+", " ", str(col(r, c["utm_campaign"]) or "").strip()),
             "us": re.sub(r"\s+", " ", str(col(r, c["utm_adset"]) or "").strip()),
             "ua": re.sub(r"\s+", " ", str(col(r, c["utm_ad"]) or "").strip()),
@@ -297,12 +298,21 @@ def main():
     dates = [r["d"] for r in ads] + [r["d"] for r in sales]
     now = datetime.now(timezone.utc)
 
+    traffic_src = cfg["sales"].get("traffic_source", "meta-ads")
+    traffic_sales = sum(1 for s in sales if norm(s.get("src", "")) == norm(traffic_src))
+    if traffic_sales < len(sales):
+        warnings.append(
+            f"{len(sales) - traffic_sales} venda(s) fora do tráfego (utm_source ≠ '{traffic_src}') — "
+            "orgânico/direto; entram só como referência, não no funil/CAC/ROAS."
+        )
+
     data = {
         "meta": {
             "title": cfg.get("title", "Funil de Trafego"),
             "platform": cfg.get("platform", "Meta Ads"),
             "currency": cfg.get("currency", "BRL"),
             "tax": float(cfg.get("tax_multiplier", 1.0)),
+            "traffic_source": traffic_src,
             "generated_at": now.isoformat(timespec="seconds"),
             "generated_at_br": now.astimezone(BR_TZ).strftime("%d/%m/%Y %H:%M"),
             "date_min": min(dates),
@@ -310,11 +320,13 @@ def main():
             "sales_tab": cfg["sales"].get("sheet_name") or "(primeira aba)",
             "ads_url": f"https://docs.google.com/spreadsheets/d/{cfg['ads']['spreadsheet_id']}",
             "sales_url": f"https://docs.google.com/spreadsheets/d/{cfg['sales']['spreadsheet_id']}",
-            "counts": {"ads_rows": len(ads), "sales_rows": len(sales), "attribution": match_counts},
+            "counts": {"ads_rows": len(ads), "sales_rows": len(sales),
+                       "traffic_sales": traffic_sales, "attribution": match_counts},
             "warnings": warnings,
         },
         "ads": ads,
-        "sales": [{"d": s["d"], "v": s["v"], "c": s["c"], "s": s["s"], "a": s["a"], "m": s["m"]} for s in sales],
+        "sales": [{"d": s["d"], "v": s["v"], "src": s.get("src", ""),
+                   "c": s["c"], "s": s["s"], "a": s["a"], "m": s["m"]} for s in sales],
     }
 
     if os.path.isdir(DIST):
