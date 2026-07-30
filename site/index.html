@@ -625,19 +625,10 @@ const SUB = [
   {k:"conv",  label:"Conversão",    fmt:M.pct,   better:true, hint:"vendas/cliques"}
 ];
 
-/* Limite de CAC definido pelo cliente (R$). CAC acima disso pinta o card de vermelho. */
-const CAC_GOAL = 110;
-
-/* Score de saúde: metas de referência (edite os good/bad livremente).
-   Cada métrica vira um sub-score 0–100; a saúde geral é a média deles. */
-const HEALTH = [
-  {k:"roas", label:"ROAS",       dir:"high", good:1.5,  bad:0.3,  fmt:M.x},
-  {k:"cac",  label:"CAC",        dir:"low",  limit:CAC_GOAL,       fmt:M.money},
-  {k:"conv", label:"Conversão",  dir:"high", good:0.10, bad:0.01, fmt:M.pct1},
-  {k:"cpc",  label:"CPC",        dir:"low",  good:1.5,  bad:6,    fmt:M.money},
-  {k:"ctr",  label:"CTR",        dir:"high", good:0.02, bad:0.006,fmt:M.pct1},
-  {k:"cpm",  label:"CPM",        dir:"low",  good:25,   bad:90,   fmt:M.money}
-];
+/* Saúde do funil ancorada no NÚMERO DO CLIENTE, não em benchmark de mercado:
+   teto de CAC = R$ 110. Tudo (bandas, ROAS, tetos de CPC/CPM) é derivado dele. */
+const CAC_GOAL = 110;   // teto de CAC definido pelo cliente (R$)
+const TICKET   = 29;    // ticket do produto (R$) — usado só p/ derivar o piso de ROAS = ticket/teto
 
 /* Ordem de colunas padrão do funil (aplicada na árvore e na visão diária).
    Definida pelo cliente: Investimento → CPM → CPC → CTR → CR → LP/Checkout →
@@ -699,13 +690,14 @@ function render(){
     <div>
       <p class="health-head">Saúde geral do funil
         <span class="tag" style="background:color-mix(in srgb,${sc} 20%,transparent);color:${sc}">${h.band}</span>
-        <span style="font-size:11.5px;font-weight:500;color:var(--ink-3);margin-left:6px">${h.score}/100</span></p>
+        <span style="font-size:11.5px;font-weight:500;color:var(--ink-3);margin-left:6px">${h.score == null ? "—" : h.score+"/100"} · ancorado no teto de CAC ${M.money(CAC_GOAL)}</span></p>
       <div class="hbars" style="margin-top:12px">
         ${h.bars.map(b => {
-          const col = b.score === null ? "var(--ink-3)" : scoreColor(b.score);
+          const col = b.score == null ? "var(--ink-3)" : scoreColor(b.score);
+          const w = b.score == null ? 0 : Math.max(0, Math.min(100, b.score));
           return `<div class="hbar">
-            <div class="hb-top"><em>${b.def.label}</em><strong>${b.def.fmt(b.v)}</strong></div>
-            <div class="hb-track"><div class="hb-fill" style="width:${b.score === null ? 0 : b.score.toFixed(0)}%;background:${col}"></div></div>
+            <div class="hb-top"><em>${b.label} <span style="color:var(--ink-3);font-weight:500">· ${b.limitStr}</span></em><strong>${b.valueStr}</strong></div>
+            <div class="hb-track"><div class="hb-fill" style="width:${w.toFixed(0)}%;background:${col}"></div></div>
           </div>`;
         }).join("")}
       </div>
@@ -792,34 +784,50 @@ function miniDelta(cur, prev, better){
 }
 
 /* ============================================================ saúde geral */
-function subScore(def, v){
-  if (v === null || !isFinite(v)) return null;
-  // Métrica com limite rígido definido pelo cliente (ex.: CAC ≤ R$110):
-  // dentro do limite = faixa verde (70–100); acima = faixa vermelha (<45).
-  if (def.limit != null && def.dir === "low"){
-    const L = def.limit;
-    return v <= L ? 70 + 30*Math.max(0, 1 - v/L) : 44*Math.max(0, 1 - (v-L)/L);
-  }
-  const {good, bad, dir} = def;
-  const t = dir === "high" ? (v - bad)/(good - bad) : (bad - v)/(bad - good);
-  return Math.max(0, Math.min(1, t)) * 100;
+/* Nota 0–100 a partir do "% do teto" (pct = valor ÷ teto, p/ métricas de custo).
+   Bandas do cliente: ≤60% Saudável · 60–80% Bom · 80–100% Atenção · >100% Crítico. */
+function bandScore(pct){
+  if (pct == null || !isFinite(pct)) return null;
+  if (pct <= 0.6) return 100 - (pct/0.6)*20;          // 100 → 80  (Saudável)
+  if (pct <= 0.8) return 80  - ((pct-0.6)/0.2)*20;    //  80 → 60  (Bom)
+  if (pct <= 1.0) return 60  - ((pct-0.8)/0.2)*20;    //  60 → 40  (Atenção)
+  return Math.max(0, 40 - (pct-1)*40);                //  40 → 0   (Crítico, zera em 200% do teto)
 }
-const scoreColor = s => s >= 70 ? "var(--good)" : s >= 45 ? "var(--warning)" : "var(--critical)";
+const scoreColor = s => s == null ? "var(--ink-3)" : s >= 60 ? "var(--good)" : s >= 40 ? "var(--warning)" : "var(--critical)";
+const bandLabel  = s => s == null ? "sem vendas" : s >= 80 ? "Saudável" : s >= 60 ? "Bom" : s >= 40 ? "Atenção" : "Crítico";
+
+/* Saúde = padrão do CAC vs teto R$110. ROAS é o espelho (ticket/CAC); CPC e CPM
+   recebem o teto que, com a conversão ATUAL do funil, segura o CAC no teto. */
 function health(cur){
-  const bars = HEALTH.map(def => ({def, v:cur[def.k], score:subScore(def, cur[def.k])}));
-  const valid = bars.filter(b => b.score !== null);
-  const score = valid.length ? Math.round(valid.reduce((s,b) => s + b.score, 0)/valid.length) : 0;
-  const ranked = valid.slice().sort((a,b) => b.score - a.score);
-  const band = score >= 70 ? "Saudável" : score >= 45 ? "Atenção" : "Crítico";
-  return {score, band, bars, best:ranked[0], worst:ranked[ranked.length-1]};
+  const T = CAC_GOAL;
+  const roasFloor = TICKET / T;                                  // piso de ROAS = 29/110
+  const cpcCeil = (cur.conv != null && isFinite(cur.conv)) ? T * cur.conv : null;   // teto CPC = 110 × vendas/clique
+  const impSale = div(cur.sales, cur.imp);
+  const cpmCeil = impSale != null ? T * impSale * 1000 : null;                       // teto CPM = 110 × vendas/impressão × 1000
+
+  const pctCac  = cur.cac  != null && isFinite(cur.cac)  ? cur.cac / T : null;
+  const pctRoas = cur.roas == null || !isFinite(cur.roas) ? null : (cur.roas > 0 ? roasFloor / cur.roas : 5);
+  const pctCpc  = (cur.cpc != null && cpcCeil) ? cur.cpc / cpcCeil : null;
+  const pctCpm  = (cur.cpm != null && cpmCeil) ? cur.cpm / cpmCeil : null;
+
+  const bars = [
+    {label:"CAC",  valueStr:M.money(cur.cac),  limitStr:`teto ${M.money(T)}`,        score:bandScore(pctCac)},
+    {label:"ROAS", valueStr:M.x(cur.roas),     limitStr:`mín ${M.x(roasFloor)}`,     score:bandScore(pctRoas)},
+    {label:"CPC",  valueStr:M.money(cur.cpc),  limitStr:cpcCeil != null ? `teto ${M.money(cpcCeil)}` : "teto —", score:bandScore(pctCpc)},
+    {label:"CPM",  valueStr:M.money(cur.cpm),  limitStr:cpmCeil != null ? `teto ${M.money(cpmCeil)}` : "teto —", score:bandScore(pctCpm)}
+  ];
+  const score = bandScore(pctCac);
+  return {score: score == null ? null : Math.round(score), band: bandLabel(score), bars};
 }
 function gauge(score, colorVar){
-  const r = 54, c = 2*Math.PI*r, off = c*(1 - score/100);
+  const s = (score == null || !isFinite(score)) ? 0 : score;
+  const r = 54, c = 2*Math.PI*r, off = c*(1 - s/100);
+  const disp = (score == null || !isFinite(score)) ? "—" : Math.round(score);
   return `<div class="gauge"><svg viewBox="0 0 132 132" width="132" height="132">
     <circle cx="66" cy="66" r="${r}" fill="none" stroke="var(--plane)" stroke-width="12"/>
     <circle cx="66" cy="66" r="${r}" fill="none" stroke="${colorVar}" stroke-width="12" stroke-linecap="round"
       stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>
-  </svg><div class="gv"><b>${score}</b><span>de 100</span></div></div>`;
+  </svg><div class="gv"><b>${disp}</b><span>de 100</span></div></div>`;
 }
 
 /* ============================================================ funil (cards divididos, degradê da marca)
