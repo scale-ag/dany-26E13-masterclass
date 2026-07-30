@@ -632,7 +632,7 @@ const CAC_GOAL = 110;
    Cada métrica vira um sub-score 0–100; a saúde geral é a média deles. */
 const HEALTH = [
   {k:"roas", label:"ROAS",       dir:"high", good:1.5,  bad:0.3,  fmt:M.x},
-  {k:"cac",  label:"CAC",        dir:"low",  good:30,   bad:120,  fmt:M.money},
+  {k:"cac",  label:"CAC",        dir:"low",  limit:CAC_GOAL,       fmt:M.money},
   {k:"conv", label:"Conversão",  dir:"high", good:0.10, bad:0.01, fmt:M.pct1},
   {k:"cpc",  label:"CPC",        dir:"low",  good:1.5,  bad:6,    fmt:M.money},
   {k:"ctr",  label:"CTR",        dir:"high", good:0.02, bad:0.006,fmt:M.pct1},
@@ -794,6 +794,12 @@ function miniDelta(cur, prev, better){
 /* ============================================================ saúde geral */
 function subScore(def, v){
   if (v === null || !isFinite(v)) return null;
+  // Métrica com limite rígido definido pelo cliente (ex.: CAC ≤ R$110):
+  // dentro do limite = faixa verde (70–100); acima = faixa vermelha (<45).
+  if (def.limit != null && def.dir === "low"){
+    const L = def.limit;
+    return v <= L ? 70 + 30*Math.max(0, 1 - v/L) : 44*Math.max(0, 1 - (v-L)/L);
+  }
   const {good, bad, dir} = def;
   const t = dir === "high" ? (v - bad)/(good - bad) : (bad - v)/(bad - good);
   return Math.max(0, Math.min(1, t)) * 100;
