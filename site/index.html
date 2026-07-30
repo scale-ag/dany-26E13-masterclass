@@ -97,9 +97,9 @@ button,select,input{font:inherit;color:inherit}
   display:flex;align-items:center;gap:5px;margin-bottom:7px}
 .kpi .v{font-size:25px;font-weight:640;letter-spacing:-.02em;line-height:1.1;overflow-wrap:anywhere}
 .kpi .d{font-size:12px;color:var(--ink-3);margin-top:6px;display:flex;align-items:center;gap:5px;min-height:18px}
-.d .up{color:var(--good-text);font-weight:600}
-.d .down{color:var(--critical);font-weight:600}
-.d .flat{color:var(--ink-3);font-weight:600}
+.up{color:var(--good-text);font-weight:600}
+.down{color:var(--critical);font-weight:600}
+.flat{color:var(--ink-3);font-weight:600}
 
 /* ---------------------------------------------------------------- painel */
 .panel{
@@ -112,15 +112,20 @@ button,select,input{font:inherit;color:inherit}
 .grid-funnel{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px}
 @media (max-width:980px){.grid2,.grid-funnel{grid-template-columns:minmax(0,1fr)}}
 
-/* ---------------------------------------------------------------- funil */
-.funnel{display:flex;flex-direction:column;gap:9px}
-.stage{display:grid;grid-template-columns:132px minmax(0,1fr) auto;gap:12px;align-items:center}
-.stage .name{font-size:12.5px;color:var(--ink-2);font-weight:550}
-.stage .track{background:var(--plane);border-radius:5px;height:26px;overflow:hidden;position:relative}
-.stage .fill{height:100%;border-radius:5px;min-width:3px;transition:width .35s cubic-bezier(.4,0,.2,1)}
-.stage .val{font-size:14px;font-weight:620;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
-.stage .val small{display:block;font-size:11px;color:var(--ink-3);font-weight:550}
-.stage.head .name{color:var(--ink-1);font-weight:620}
+/* ---------------------------------------------------------------- funil (cards divididos) */
+.funnel{display:flex;flex-direction:column;gap:8px}
+.fstage{display:grid;grid-template-columns:1.15fr 1fr;border:1px solid var(--ring);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.fstage .fl{padding:14px 16px;display:flex;flex-direction:column;justify-content:center;gap:3px;min-height:76px}
+.fstage .fl .fn{font-size:12.5px;font-weight:600;line-height:1.1;opacity:.92}
+.fstage .fl .fv{font-size:24px;font-weight:760;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
+.fstage .fr{padding:11px 15px;background:var(--card);display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0}
+.fstage .fr .cl{font-size:11px;color:var(--ink-3);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.fstage .fr .cv{font-size:19px;font-weight:700;color:var(--brand);letter-spacing:-.01em;line-height:1.15;font-variant-numeric:tabular-nums}
+.fstage .fr .fsub{font-size:12px;color:var(--ink-3);line-height:1.35}
+.fstage .fr .fsub b{color:var(--ink-2);font-variant-numeric:tabular-nums;font-weight:650}
+.fstage .fgoal{height:8px;border-radius:5px;background:color-mix(in srgb,var(--ink-3) 22%,transparent);overflow:hidden;margin-top:7px}
+.fstage .fgoal i{display:block;height:100%;background:var(--brand);border-radius:5px;transition:width .4s}
+@media (max-width:520px){.fstage{grid-template-columns:1fr}}
 
 /* ---------------------------------------------------------------- charts */
 .chart{width:100%;display:block;overflow:visible}
@@ -167,6 +172,61 @@ tfoot td{font-weight:650;color:var(--ink-1);border-top:1px solid var(--axis);bor
   position:sticky;bottom:0;background:var(--card)}
 .cell-scale{border-radius:5px;padding:3px 7px;display:inline-block;min-width:62px;text-align:right}
 .muted-row td{opacity:.62;font-style:italic}
+
+/* ---------------------------------------------------------------- saúde geral */
+.health{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center}
+@media (max-width:760px){.health{grid-template-columns:1fr}}
+.gauge{position:relative;width:132px;height:132px;flex:none;margin:2px auto}
+.gauge svg{transform:rotate(-90deg)}
+.gauge .gv{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+.gauge .gv b{font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.gauge .gv span{font-size:11px;color:var(--ink-3)}
+.health-head{font-size:15px;font-weight:640;margin:0 0 3px}
+.health-head .tag{font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;margin-left:8px;vertical-align:middle}
+.health-sub{font-size:12.5px;color:var(--ink-2);margin:0 0 14px}
+.hbars{display:grid;grid-template-columns:1fr 1fr;gap:11px 26px}
+@media (max-width:620px){.hbars{grid-template-columns:1fr}}
+.hbar .hb-top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px}
+.hbar .hb-top em{font-style:normal;color:var(--ink-2)}
+.hbar .hb-top strong{font-variant-numeric:tabular-nums;font-weight:640;color:var(--ink-1)}
+.hbar .hb-track{height:7px;border-radius:4px;background:var(--plane);overflow:hidden}
+.hbar .hb-fill{height:100%;border-radius:4px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+
+/* ---------------------------------------------------------------- hero invest→receita→roas */
+.hero{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;align-items:stretch;margin-bottom:6px}
+@media (max-width:860px){.hero{grid-template-columns:1fr;gap:8px}.hero .op{display:none}}
+.hero .hcard{background:var(--card);border:1px solid var(--ring);border-radius:14px;padding:15px 17px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.hero .hcard.roas{border-top:3px solid var(--brand)}
+.hero .hk{font-size:12px;color:var(--ink-2);font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.hero .hk small{font-weight:500;color:var(--ink-3)}
+.hero .hv{font-size:29px;font-weight:680;letter-spacing:-.02em;line-height:1}
+.hero .hv.g{color:var(--good-text)}
+.hero .hd{font-size:12.5px;margin-top:7px}
+.hero .op{display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--ink-3);font-weight:400}
+.hero-line{font-size:13px;color:var(--ink-2);margin:2px 0 0}
+.hero-line b{color:var(--brand)}
+.ratebar{height:8px;border-radius:5px;background:var(--plane);overflow:hidden;margin:10px 0 4px;display:flex}
+.ratebar i{display:block;height:100%}
+
+/* ---------------------------------------------------------------- meta de investimento */
+.goalrow{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-3);margin:2px 0 10px;flex-wrap:wrap}
+.goalrow input{width:100px;background:var(--plane);border:1px solid var(--ring);border-radius:7px;padding:4px 7px;font-size:13px;color:var(--ink-1)}
+.goalbar{height:9px;border-radius:5px;background:var(--plane);overflow:hidden;margin-top:6px}
+.goalbar i{display:block;height:100%;background:var(--brand);border-radius:5px;transition:width .4s}
+
+/* ---------------------------------------------------------------- árvore campanha/conjunto/anúncio */
+.tree td:first-child{padding-left:10px}
+.tree .lv1 td:first-child{padding-left:34px}
+.tree .lv2 td:first-child{padding-left:60px}
+.tree tr.exp>td:first-child{cursor:pointer}
+.tree tr.exp:hover>td:first-child{color:var(--brand)}
+.tree .caret{display:inline-block;width:14px;color:var(--ink-3);transition:transform .15s;font-size:10px}
+.tree tr.open>td:first-child .caret{transform:rotate(90deg);color:var(--brand)}
+.tree .lv1 td{background:color-mix(in srgb,var(--ink-3) 4%,transparent)}
+.tree .lv2 td{background:color-mix(in srgb,var(--ink-3) 8%,transparent);font-size:12.5px}
+.tree .nm{white-space:normal;line-height:1.3}
+.tree .lv0 .nm{font-weight:600}
+.tree .lv1 .nm,.tree .lv2 .nm{font-weight:450;color:var(--ink-2)}
 
 /* ---------------------------------------------------------------- rodape */
 .warn{
@@ -237,8 +297,8 @@ const escape_ = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",
 
 /* ============================================================ estado */
 let DATA = null;
-let STATE = {from:null, to:null, compare:true, level:"campaign", metric:"spend",
-             sort:{key:"spend", dir:-1}, preset:"all"};
+let STATE = {from:null, to:null, compare:true, metric:"spend",
+             treeSort:{key:"spend", dir:-1}, expanded:new Set(), goal:null, preset:"all"};
 
 /* ============================================================ métricas
    Regra única do projeto: gasto = gasto bruto x imposto. Toda métrica derivada
@@ -263,7 +323,10 @@ function derive(t){
     cpic: div(t.spend, t.ic),
     cac:  div(t.spend, t.sales),
     conv: div(t.sales, t.clk),
-    convLpv: div(t.sales, t.lpv),
+    cr:       div(t.lpv, t.clk),      // CR: page views / cliques
+    lpCheck:  div(t.ic, t.lpv),       // LP → checkout: checkouts / page views
+    convCheck:div(t.sales, t.ic),     // conversão checkout: vendas / checkouts
+    convLpv:  div(t.sales, t.lpv),    // conversão LP: vendas / page views
     roas: div(t.rev, t.spend),
     ticket: div(t.rev, t.sales),
     lucro: t.rev - t.spend
@@ -445,6 +508,83 @@ function lineChart(host, labels, series, fmt){
   host.appendChild(svg);
 }
 
+/**
+ * Gráfico combinado barra + linha com EIXO DUPLO (esquerda = barras, direita = linha).
+ * Usado a pedido, no formato da dash de referência. Eixo duplo pode induzir a leitura
+ * (a posição relativa barra×linha depende das escalas), por isso cada eixo é rotulado
+ * e o tooltip traz os valores exatos.
+ */
+function comboChart(host, rows, cfg){
+  host.innerHTML = "";
+  const W = Math.max(300, host.clientWidth || 520), H = 240;
+  const P = {t:22, r:50, b:28, l:56};
+  const iw = W - P.l - P.r, ih = H - P.t - P.b;
+  const svg = el("svg", {class:"chart", viewBox:`0 0 ${W} ${H}`, width:"100%", height:H, role:"img"});
+  const n = rows.length;
+
+  const leftMax  = niceMax(Math.max(...rows.flatMap(r => cfg.bars.map(b => r[b.key] || 0)), 0));
+  const rightMax = niceMax(Math.max(...rows.map(r => r[cfg.line.key]).filter(v => v !== null && isFinite(v)), 0));
+  const yL = v => P.t + ih - (leftMax  > 0 ? (v/leftMax)  * ih : 0);
+  const yR = v => P.t + ih - (rightMax > 0 ? (v/rightMax) * ih : 0);
+
+  for (const t of ticks(leftMax)){
+    svg.appendChild(el("line", {class:"gl", x1:P.l, x2:P.l+iw, y1:yL(t), y2:yL(t)}));
+    const tx = el("text", {x:P.l-7, y:yL(t)+4, "text-anchor":"end"}); tx.textContent = cfg.leftFmt(t); svg.appendChild(tx);
+  }
+  for (const t of ticks(rightMax)){
+    const tx = el("text", {x:P.l+iw+7, y:yR(t)+4, "text-anchor":"start"}); tx.textContent = cfg.rightFmt(t); svg.appendChild(tx);
+  }
+  svg.appendChild(el("line", {class:"ax", x1:P.l, x2:P.l+iw, y1:P.t+ih, y2:P.t+ih}));
+
+  const slot = iw/Math.max(1, n);
+  const nb = cfg.bars.length;
+  const groupW = Math.min(slot - 3, nb > 1 ? 40 : 30);
+  const bw = Math.max(2, groupW/nb - 1);
+  const step = labelStep(n, iw);
+
+  rows.forEach((r,i) => {
+    const cx = P.l + slot*i + slot/2;
+    cfg.bars.forEach((b,bi) => {
+      const v = r[b.key] || 0, h = Math.max(v > 0 ? 1.5 : 0, P.t + ih - yL(v));
+      const x = cx - groupW/2 + bi*(groupW/nb) + (groupW/nb - bw)/2;
+      if (h > 0) svg.appendChild(el("rect", {x, y:P.t+ih-h, width:bw, height:h, fill:b.color, rx:Math.min(3,bw/2)}));
+    });
+    if (i % step === 0 || i === n-1){ const tx = el("text", {x:cx, y:H-8, "text-anchor":"middle"}); tx.textContent = dayBR(r.d); svg.appendChild(tx); }
+  });
+
+  // linha (eixo direito) — quebra em segmentos onde não há valor
+  const pts = rows.map((r,i) => { const v = r[cfg.line.key]; return (v === null || !isFinite(v)) ? null : [P.l+slot*i+slot/2, yR(v), v]; });
+  let seg = []; const segs = [];
+  pts.forEach(p => { if (p) seg.push(p); else if (seg.length){ segs.push(seg); seg = []; } }); if (seg.length) segs.push(seg);
+  segs.forEach(s => {
+    const d = s.map((p,i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+    svg.appendChild(el("path", {d, fill:"none", stroke:cfg.line.color, "stroke-width":2, "stroke-linejoin":"round", "stroke-linecap":"round"}));
+  });
+  if (n <= 45) pts.forEach(p => { if (p) svg.appendChild(el("circle", {cx:p[0], cy:p[1], r:3.2, fill:cfg.line.color, stroke:"var(--card)", "stroke-width":1.5})); });
+
+  if (cfg.labelLine && n <= 20) pts.forEach(p => { if (p){ const tx = el("text", {x:p[0], y:p[1]-7, "text-anchor":"middle", class:"lbl"}); tx.textContent = cfg.lineFmt(p[2]); svg.appendChild(tx); } });
+  if (cfg.labelBars && nb === 1 && n <= 14) rows.forEach((r,i) => {
+    const v = r[cfg.bars[0].key] || 0;
+    if (v > 0){ const tx = el("text", {x:P.l+slot*i+slot/2, y:yL(v)-5, "text-anchor":"middle"}); tx.setAttribute("font-size","9"); tx.textContent = cfg.leftFmt(v); svg.appendChild(tx); }
+  });
+
+  const cross = el("line", {class:"cross", y1:P.t, y2:P.t+ih}); svg.appendChild(cross);
+  const hit = el("rect", {class:"hit", x:P.l, y:P.t, width:iw, height:ih});
+  hit.addEventListener("mousemove", ev => {
+    const box = svg.getBoundingClientRect();
+    const i = Math.max(0, Math.min(n-1, Math.floor((((ev.clientX-box.left)/box.width)*W - P.l)/slot)));
+    const r = rows[i], cx = P.l + slot*i + slot/2;
+    cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.style.opacity = 1;
+    let html = `<b>${dayFull(r.d)}</b>`;
+    cfg.bars.forEach(b => html += `<div class="r"><em><i style="background:${b.color}"></i>${b.name}</em><strong>${cfg.leftFmt(r[b.key]||0)}</strong></div>`);
+    html += `<div class="r"><em><i style="background:${cfg.line.color}"></i>${cfg.line.name}</em><strong>${cfg.lineFmt(r[cfg.line.key])}</strong></div>`;
+    showTip(html, ev);
+  });
+  hit.addEventListener("mouseleave", () => { cross.style.opacity = 0; hideTip(); });
+  svg.appendChild(hit);
+  host.appendChild(svg);
+}
+
 /* ============================================================ render */
 function setPeriod(from, to, preset){
   STATE.from = from; STATE.to = to; STATE.preset = preset || "custom";
@@ -469,38 +609,56 @@ function deltaHTML(cur, prev, fmt, higherIsBetter){
   return `<span class="${cls}">${arrow} ${nf1.format(Math.abs(ch)*100)}%</span> vs ${fmt(prev)}`;
 }
 
-const KPI_DEFS = [
-  {k:"spend", label:"Investimento", fmt:M.money, better:null, hint:"com imposto"},
-  {k:"rev",   label:"Receita",      fmt:M.money, better:true},
-  {k:"roas",  label:"ROAS",         fmt:M.x,     better:true},
-  {k:"lucro", label:"Resultado",    fmt:M.money, better:true, hint:"receita − investimento"},
+const RAW = ["spend","gross","imp","clk","lpv","ic","sales","rev"];
+
+/* KPIs secundários (abaixo do hero Investimento→Receita→ROAS) */
+const SUB = [
   {k:"sales", label:"Vendas",       fmt:M.int,   better:true},
+  {k:"lucro", label:"Resultado",    fmt:M.money, better:true, hint:"receita − investimento"},
   {k:"cac",   label:"CAC",          fmt:M.money, better:false, hint:"custo por venda"},
-  {k:"cpl",   label:"CPL",          fmt:M.money, better:false, hint:"custo por page view"},
+  {k:"ticket",label:"Ticket médio", fmt:M.money, better:true},
+  {k:"cpl",   label:"CPL",          fmt:M.money, better:false, hint:"custo/page view"},
   {k:"cpc",   label:"CPC",          fmt:M.money, better:false},
   {k:"cpm",   label:"CPM",          fmt:M.money, better:false},
   {k:"ctr",   label:"CTR",          fmt:M.pct,   better:true},
-  {k:"conv",  label:"Conversão",    fmt:M.pct,   better:true, hint:"vendas / cliques"},
-  {k:"ticket",label:"Ticket médio", fmt:M.money, better:true}
+  {k:"conv",  label:"Conversão",    fmt:M.pct,   better:true, hint:"vendas/cliques"}
 ];
 
-const COLS = [
-  {k:"label", label:"", fmt:null},
-  {k:"spend", label:"Investimento", fmt:M.money},
-  {k:"imp",   label:"Impr.",  fmt:M.int},
-  {k:"clk",   label:"Cliques",fmt:M.int},
-  {k:"lpv",   label:"P. Views", fmt:M.int},
-  {k:"sales", label:"Vendas", fmt:M.int},
-  {k:"rev",   label:"Receita",fmt:M.money},
-  {k:"cpm",   label:"CPM",    fmt:M.money},
-  {k:"ctr",   label:"CTR",    fmt:M.pct1},
-  {k:"cpc",   label:"CPC",    fmt:M.money},
-  {k:"cpl",   label:"CPL",    fmt:M.money},
-  {k:"cac",   label:"CAC",    fmt:M.money, scale:"low"},
-  {k:"conv",  label:"Conv.",  fmt:M.pct1},
-  {k:"roas",  label:"ROAS",   fmt:M.x, scale:"high"},
-  {k:"lucro", label:"Result.",fmt:M.money}
+/* Score de saúde: metas de referência (edite os good/bad livremente).
+   Cada métrica vira um sub-score 0–100; a saúde geral é a média deles. */
+const HEALTH = [
+  {k:"roas", label:"ROAS",       dir:"high", good:1.5,  bad:0.3,  fmt:M.x},
+  {k:"cac",  label:"CAC",        dir:"low",  good:30,   bad:120,  fmt:M.money},
+  {k:"conv", label:"Conversão",  dir:"high", good:0.10, bad:0.01, fmt:M.pct1},
+  {k:"cpc",  label:"CPC",        dir:"low",  good:1.5,  bad:6,    fmt:M.money},
+  {k:"ctr",  label:"CTR",        dir:"high", good:0.02, bad:0.006,fmt:M.pct1},
+  {k:"cpm",  label:"CPM",        dir:"low",  good:25,   bad:90,   fmt:M.money}
 ];
+
+/* Ordem de colunas padrão do funil (aplicada na árvore e na visão diária).
+   Definida pelo cliente: Investimento → CPM → CPC → CTR → CR → LP/Checkout →
+   Checkouts → Custo Checkout → Vendas → CAC → ROAS → Conv. Checkout → Conv. LP. */
+const METRIC_COLS = [
+  {k:"spend",    label:"Invest.",     fmt:M.money,  hint:"Investimento com imposto"},
+  {k:"cpm",      label:"CPM",         fmt:M.money,  hint:"Custo por mil impressões", scale:"low"},
+  {k:"cpc",      label:"CPC",         fmt:M.money,  hint:"Custo por clique", scale:"low"},
+  {k:"ctr",      label:"CTR",         fmt:M.pct1,   hint:"Cliques ÷ impressões"},
+  {k:"cr",       label:"CR",          fmt:M.pct1,   hint:"CR: page views ÷ cliques"},
+  {k:"lpCheck",  label:"LP→Check.",   fmt:M.pct1,   hint:"LP → checkout: checkouts ÷ page views"},
+  {k:"ic",       label:"Checkouts",   fmt:M.int,    hint:"Checkouts iniciados"},
+  {k:"cpic",     label:"C/Checkout",  fmt:M.money,  hint:"Custo por checkout", scale:"low"},
+  {k:"sales",    label:"Vendas",      fmt:M.int,    hint:"Vendas"},
+  {k:"cac",      label:"CAC",         fmt:M.money,  hint:"Custo por venda", scale:"low"},
+  {k:"roas",     label:"ROAS",        fmt:M.x,      hint:"Receita ÷ investimento", scale:"high"},
+  {k:"convCheck",label:"Conv.Check.", fmt:M.pct1,   hint:"Conversão checkout → compra: vendas ÷ checkouts"},
+  {k:"convLpv",  label:"Conv.LP",     fmt:M.pct1,   hint:"Conversão LP → venda: vendas ÷ page views"}
+];
+
+/* Árvore Campanha › Conjunto › Anúncio: coluna de nome + a ordem padrão */
+const TCOLS = [{k:"label", label:"Campanha › Conjunto › Anúncio", fmt:null}, ...METRIC_COLS];
+
+/* Visão diária: coluna de dia + a mesma ordem padrão */
+const DCOLS = [{k:"d", label:"Dia", fmt:null}, ...METRIC_COLS];
 
 const METRICS = [
   {k:"spend", label:"Investimento", fmt:M.money0},
@@ -525,57 +683,75 @@ function render(){
   const cur  = aggregate(from, to);
   const prev = aggregate(pFrom, pTo);
 
-  /* ---- KPIs ---- */
-  document.getElementById("kpis").innerHTML = KPI_DEFS.map(d => `
-    <div class="kpi">
-      <div class="k">${d.label}${d.hint ? `<span style="font-weight:500;text-transform:none;letter-spacing:0;opacity:.75">· ${d.hint}</span>` : ""}</div>
-      <div class="v">${d.fmt(cur[d.k])}</div>
-      <div class="d">${deltaHTML(cur[d.k], prev[d.k], d.fmt, d.better)}</div>
-    </div>`).join("");
-
   document.getElementById("cmpNote").textContent = STATE.compare
     ? `comparando com ${dayFull(pFrom)} – ${dayFull(pTo)} (${len} dia${len>1?"s":""})`
     : `${len} dia${len>1?"s":""} selecionado${len>1?"s":""}`;
 
-  /* ---- funil ---- */
-  const stages = [
-    {n:"Impressões",  v:cur.imp, f:M.int,  c:"var(--f1)", cost:cur.cpm,  costLabel:"CPM"},
-    {n:"Cliques",     v:cur.clk, f:M.int,  c:"var(--f2)", cost:cur.cpc,  costLabel:"CPC"},
-    {n:"Page views",  v:cur.lpv, f:M.int,  c:"var(--f3)", cost:cur.cpl,  costLabel:"CPL"},
-    {n:"Checkouts",   v:cur.ic,  f:M.int,  c:"var(--f4)", cost:cur.cpic, costLabel:"C/checkout"},
-    {n:"Vendas",      v:cur.sales,f:M.int, c:"var(--f5)", cost:cur.cac,  costLabel:"CAC"}
-  ];
-  // Impressoes sao ~3 ordens de grandeza maiores que vendas: numa escala linear
-  // todos os estagios abaixo do topo viram um risco de 1px. Largura em log10,
-  // declarado na nota do painel; os valores absolutos ficam sempre a direita.
-  const lg = v => Math.log10(Math.max(0, v) + 1);
-  const top = Math.max(...stages.map(s => lg(s.v)), 1);
-  document.getElementById("funnel").innerHTML = `
-    <div class="stage head">
-      <div class="name">Investimento</div>
-      <div class="track"><div class="fill" style="width:100%;background:color-mix(in srgb,var(--ink-3) 26%,transparent)"></div></div>
-      <div class="val">${M.money(cur.spend)}<small>com imposto ×${taxStr(DATA.meta.tax)}</small></div>
-    </div>` + stages.map((s,i) => {
-      const prevStage = i === 0 ? null : stages[i-1];
-      const rate = prevStage && prevStage.v > 0 ? s.v/prevStage.v : null;
-      return `<div class="stage">
-        <div class="name">${s.n}${rate !== null ? `<br><span style="font-size:11px;color:var(--ink-3)">${M.pct1(rate)} do anterior</span>` : ""}</div>
-        <div class="track"><div class="fill" style="width:${Math.max(0.4,(lg(s.v)/top)*100)}%;background:${s.c}"></div></div>
-        <div class="val">${s.f(s.v)}<small>${s.costLabel} ${M.money(s.cost)}</small></div>
-      </div>`;
-    }).join("");
+  /* ---- saúde geral do funil ---- */
+  const h = health(cur);
+  const sc = scoreColor(h.score);
+  document.getElementById("health").innerHTML = `
+    ${gauge(h.score, sc)}
+    <div>
+      <p class="health-head">Saúde geral do funil
+        <span class="tag" style="background:color-mix(in srgb,${sc} 20%,transparent);color:${sc}">${h.band}</span>
+        <span style="font-size:11.5px;font-weight:500;color:var(--ink-3);margin-left:6px">${h.score}/100</span></p>
+      <div class="hbars" style="margin-top:12px">
+        ${h.bars.map(b => {
+          const col = b.score === null ? "var(--ink-3)" : scoreColor(b.score);
+          return `<div class="hbar">
+            <div class="hb-top"><em>${b.def.label}</em><strong>${b.def.fmt(b.v)}</strong></div>
+            <div class="hb-track"><div class="hb-fill" style="width:${b.score === null ? 0 : b.score.toFixed(0)}%;background:${col}"></div></div>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>`;
 
-  /* ---- gráficos diários ---- */
+  /* ---- hero: investimento → receita → roas ---- */
+  document.getElementById("hero").innerHTML = `
+    <div class="hcard"><div class="hk">💸 Investimento <small>com imposto</small></div>
+      <div class="hv">${M.money(cur.spend)}</div><div class="hd">${miniDelta(cur.spend,prev.spend,null)} vs anterior</div></div>
+    <div class="op">→</div>
+    <div class="hcard"><div class="hk">💰 Receita</div>
+      <div class="hv g">${M.money(cur.rev)}</div><div class="hd">${miniDelta(cur.rev,prev.rev,true)} vs anterior</div></div>
+    <div class="op">=</div>
+    <div class="hcard roas"><div class="hk">📈 ROAS <small>retorno</small></div>
+      <div class="hv">${M.x(cur.roas)}</div><div class="hd">${miniDelta(cur.roas,prev.roas,true)} vs anterior</div></div>`;
+  document.getElementById("heroLine").innerHTML = (cur.spend > 0 && cur.roas !== null)
+    ? `Cada <b>R$ 1,00</b> investido virou <b>${M.money(cur.roas)}</b> de receita · ${M.money(cur.spend)} → ${M.money(cur.rev)} no período${STATE.compare ? " · variações vs. período anterior" : ""}.`
+    : `Sem investimento no período selecionado.`;
+
+  /* ---- funil (esquerda) ---- */
+  renderFunnel(cur);
+
+  /* ---- gráficos diários (direita) ---- */
   const rows = daily(from, to);
   const pRows = daily(pFrom, pTo);
-  barChart(document.getElementById("chSpend"), rows, "spend", "var(--series-1)", M.money0, "Investimento");
-  barChart(document.getElementById("chSales"), rows, "sales", "var(--series-3)", M.int, "Vendas");
+  comboChart(document.getElementById("chA"), rows, {
+    bars:[{key:"spend", color:"var(--critical)", name:"Investimento c/ imposto"}],
+    line:{key:"sales", color:"var(--good)", name:"Vendas"},
+    leftFmt:M.money0, rightFmt:M.int, lineFmt:M.int, labelBars:true, labelLine:true
+  });
+  comboChart(document.getElementById("chB"), rows, {
+    bars:[{key:"rev", color:"var(--good)", name:"Faturamento"},
+          {key:"spend", color:"var(--critical)", name:"Investimento c/ imposto"}],
+    line:{key:"roas", color:"var(--ink-1)", name:"ROAS"},
+    leftFmt:M.money0, rightFmt:M.x, lineFmt:M.x, labelBars:false, labelLine:true
+  });
+  const lgSq = c => `<i style="background:${c}"></i>`;
+  const lgLn = c => `<i style="width:15px;height:0;border-top:2px solid ${c};border-radius:0"></i>`;
+  document.getElementById("legA").innerHTML =
+    `<span>${lgSq("var(--critical)")}<span style="color:var(--ink-2)">Investimento c/ imposto</span></span>` +
+    `<span>${lgLn("var(--good)")}<span style="color:var(--ink-2)">Vendas (eixo dir.)</span></span>`;
+  document.getElementById("legB").innerHTML =
+    `<span>${lgSq("var(--good)")}<span style="color:var(--ink-2)">Faturamento</span></span>` +
+    `<span>${lgSq("var(--critical)")}<span style="color:var(--ink-2)">Investimento c/ imposto</span></span>` +
+    `<span>${lgLn("var(--ink-1)")}<span style="color:var(--ink-2)">ROAS (eixo dir.)</span></span>`;
 
   const met = METRICS.find(m => m.k === STATE.metric) || METRICS[0];
-  const series = [{name:`Período atual`, color:"var(--series-1)",
+  const series = [{name:"Período atual", color:"var(--series-1)",
                    values:rows.map(r => r[met.k]), fullLabels:rows.map(r => dayFull(r.d))}];
   if (STATE.compare){
-    // Alinhados por posição no período, não por data — é o que torna a curva comparável.
     series.push({name:"Período anterior", color:"var(--series-2)", dashed:true,
                  values:rows.map((_,i) => pRows[i] ? pRows[i][met.k] : null),
                  fullLabels:rows.map((_,i) => pRows[i] ? dayFull(pRows[i].d) : "")});
@@ -586,72 +762,229 @@ function render(){
   lineChart(document.getElementById("chMetric"), rows.map(r => dayBR(r.d)), series, met.fmt);
   document.getElementById("metricTitle").textContent = met.label + " por dia";
 
-  renderTable();
+  renderDaily();
+  renderOpt();
 }
 
-function renderTable(){
-  const list = groupBy(STATE.level, STATE.from, STATE.to);
-  const {key, dir} = STATE.sort;
-  list.sort((a,b) => {
-    if (key === "label") return dir * a.label.localeCompare(b.label,"pt-BR");
-    const av = a[key], bv = b[key];
-    const an = av === null || !isFinite(av), bn = bv === null || !isFinite(bv);
-    if (an && bn) return 0;
-    if (an) return 1;              // vazio sempre no fim, nas duas direções
-    if (bn) return -1;
+/* ---- delta compacto (só a seta + %) p/ o hero ---- */
+function miniDelta(cur, prev, better){
+  if (!STATE.compare || prev == null || !isFinite(prev) || prev === 0 || cur == null || !isFinite(cur))
+    return `<span class="flat">—</span>`;
+  const ch = (cur - prev)/Math.abs(prev);
+  const ar = Math.abs(ch) < 0.0005 ? "→" : (ch > 0 ? "▲" : "▼");
+  let cls;
+  if (better === null) cls = "flat";
+  else { const bad = better === false; cls = Math.abs(ch) < 0.0005 ? "flat" : ((ch > 0) !== bad ? "up" : "down"); }
+  return `<span class="${cls}">${ar} ${nf1.format(Math.abs(ch)*100)}%</span>`;
+}
+
+/* ============================================================ saúde geral */
+function subScore(def, v){
+  if (v === null || !isFinite(v)) return null;
+  const {good, bad, dir} = def;
+  const t = dir === "high" ? (v - bad)/(good - bad) : (bad - v)/(bad - good);
+  return Math.max(0, Math.min(1, t)) * 100;
+}
+const scoreColor = s => s >= 70 ? "var(--good)" : s >= 45 ? "var(--warning)" : "var(--critical)";
+function health(cur){
+  const bars = HEALTH.map(def => ({def, v:cur[def.k], score:subScore(def, cur[def.k])}));
+  const valid = bars.filter(b => b.score !== null);
+  const score = valid.length ? Math.round(valid.reduce((s,b) => s + b.score, 0)/valid.length) : 0;
+  const ranked = valid.slice().sort((a,b) => b.score - a.score);
+  const band = score >= 70 ? "Saudável" : score >= 45 ? "Atenção" : "Crítico";
+  return {score, band, bars, best:ranked[0], worst:ranked[ranked.length-1]};
+}
+function gauge(score, colorVar){
+  const r = 54, c = 2*Math.PI*r, off = c*(1 - score/100);
+  return `<div class="gauge"><svg viewBox="0 0 132 132" width="132" height="132">
+    <circle cx="66" cy="66" r="${r}" fill="none" stroke="var(--plane)" stroke-width="12"/>
+    <circle cx="66" cy="66" r="${r}" fill="none" stroke="${colorVar}" stroke-width="12" stroke-linecap="round"
+      stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>
+  </svg><div class="gv"><b>${score}</b><span>de 100</span></div></div>`;
+}
+
+/* ============================================================ funil (cards divididos, degradê da marca)
+   Esquerda: volume da etapa (bloco verde, escurecendo conforme desce).
+   Direita: custo da etapa + taxa de passagem para a etapa seguinte. */
+function renderFunnel(cur){
+  const stages = [
+    {n:"Investimento", big:M.money(cur.spend), bg:"#8fe01e", ink:"#0c1400", goal:true,
+      cl:"Gasto bruto", cv:M.money(cur.gross), sub:`+ imposto ×${taxStr(DATA.meta.tax)} = <b>${M.money(cur.spend)}</b>`},
+    {n:"Impressões", big:M.int(cur.imp), bg:"#7ecb1c", ink:"#0c1400",
+      cl:"CPM", cv:M.money(cur.cpm), sub:`CTR <b>${M.pct1(cur.ctr)}</b>`},
+    {n:"Cliques", big:M.int(cur.clk), bg:"#63b015", ink:"#0c1400",
+      cl:"CPC", cv:M.money(cur.cpc), sub:`Clique → Page view <b>${M.pct1(div(cur.lpv,cur.clk))}</b>`},
+    {n:"Page views", big:M.int(cur.lpv), bg:"#4a8a0a", ink:"#ffffff",
+      cl:"Custo / Page view", cv:M.money(cur.cpl), sub:`Page view → Checkout <b>${M.pct1(div(cur.ic,cur.lpv))}</b>`},
+    {n:"Checkouts", big:M.int(cur.ic), bg:"#356606", ink:"#ffffff",
+      cl:"Custo / Checkout", cv:M.money(cur.cpic), sub:`Checkout → Venda <b>${M.pct1(div(cur.sales,cur.ic))}</b>`},
+    {n:"Vendas", big:M.int(cur.sales), bg:"#244a04", ink:"#ffffff",
+      cl:"CAC", cv:M.money(cur.cac), sub:`ROAS <b>${M.x(cur.roas)}</b> · Conv. total <b>${M.pct1(cur.conv)}</b>`}
+  ];
+  const goal = STATE.goal;
+  document.getElementById("funnel").innerHTML = stages.map(s => {
+    let goalHTML = "";
+    if (s.goal && goal && goal > 0){
+      const pct = Math.min(100, cur.spend/goal*100);
+      goalHTML = `<div class="fgoal"><i style="width:${pct.toFixed(1)}%"></i></div>
+        <div class="fsub" style="margin-top:4px">meta ${M.money(goal)} · <b>${nf1.format(cur.spend/goal*100)}%</b> do orçamento</div>`;
+    }
+    return `<div class="fstage">
+      <div class="fl" style="background:${s.bg};color:${s.ink}">
+        <div class="fn">${s.n}</div><div class="fv">${s.big}</div>
+      </div>
+      <div class="fr">
+        <div class="cl">${s.cl}</div><div class="cv">${s.cv}</div>
+        <div class="fsub">${s.sub}</div>${goalHTML}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ============================================================ árvore campanha › conjunto › anúncio
+   Métricas de anúncio (gasto/impressões/…) ficam na folha (anúncio) e sobem
+   somando. As vendas entram no nível em que a UTM casou (anúncio, conjunto ou
+   campanha) e também sobem — assim a campanha mostra o total real mesmo quando
+   a venda só casou até um nível acima. */
+function buildTree(from, to){
+  const tax = DATA.meta.tax;
+  const root = new Map();
+  const mk = label => Object.assign(blank(), {label, kids:new Map()});
+  const camp = c => { let n = root.get(c); if (!n){ n = mk(c); root.set(c, n); } return n; };
+  const set  = (cp,s) => { let n = cp.kids.get(s); if (!n){ n = mk(s); cp.kids.set(s, n); } return n; };
+  const ad   = (as,a) => { let n = as.kids.get(a); if (!n){ n = mk(a); as.kids.set(a, n); } return n; };
+
+  for (const r of DATA.ads) if (r.d >= from && r.d <= to) accAd(ad(set(camp(r.c), r.s), r.a), r, tax);
+  const un = blank();
+  for (const s of DATA.sales) if (s.d >= from && s.d <= to){
+    if (s.m === "ad")            accSale(ad(set(camp(s.c), s.s), s.a), s);
+    else if (s.m === "adset")    accSale(set(camp(s.c), s.s), s);
+    else if (s.m === "campaign") accSale(camp(s.c), s);
+    else                         accSale(un, s);
+  }
+  const roll = (node, key, level) => {
+    const kids = [...node.kids.entries()].map(([lbl,ch]) => roll(ch, key + " " + lbl, level + 1));
+    const agg = blank();
+    for (const k of RAW) agg[k] = node[k];
+    for (const c of kids) for (const k of RAW) agg[k] += c[k];
+    const d = derive(agg);
+    d.label = node.label; d.key = key; d.level = level; d.kids = kids;
+    return d;
+  };
+  return {camps:[...root.entries()].map(([lbl,n]) => roll(n, lbl, 0)), un:derive(un)};
+}
+
+function sortNodes(list, key, dir){
+  return list.slice().sort((a,b) => {
+    if (key === "label") return dir * a.label.localeCompare(b.label, "pt-BR");
+    const av = a[key], bv = b[key], an = av === null || !isFinite(av), bn = bv === null || !isFinite(bv);
+    if (an && bn) return 0; if (an) return 1; if (bn) return -1;
     return dir * (av - bv);
   });
+}
+function flatten(camps){
+  const {key, dir} = STATE.treeSort, out = [];
+  for (const c of sortNodes(camps, key, dir)){
+    out.push(c);
+    if (STATE.expanded.has(c.key)) for (const s of sortNodes(c.kids, key, dir)){
+      out.push(s);
+      if (STATE.expanded.has(s.key)) for (const a of sortNodes(s.kids, key, dir)) out.push(a);
+    }
+  }
+  return out;
+}
 
-  // Escalas de cor por coluna (redundantes: o número está sempre visível).
+function renderOpt(){
+  const {camps, un} = buildTree(STATE.from, STATE.to);
+  const {key, dir} = STATE.treeSort;
+
+  // Escala de cor calibrada no nível de campanha (baseline estável).
   const scales = {};
-  for (const c of COLS.filter(c => c.scale)){
-    const vals = list.filter(r => r.spend > 0 && r[c.k] !== null && isFinite(r[c.k])).map(r => r[c.k]);
+  for (const c of TCOLS.filter(c => c.scale)){
+    const vals = camps.filter(r => r.spend > 0 && r[c.k] !== null && isFinite(r[c.k])).map(r => r[c.k]);
     if (vals.length > 1) scales[c.k] = {min:Math.min(...vals), max:Math.max(...vals), dir:c.scale};
   }
   const shade = (k, v) => {
     const s = scales[k];
     if (!s || v === null || !isFinite(v) || s.max === s.min) return "";
     let t = (v - s.min)/(s.max - s.min);
-    if (s.dir === "low") t = 1 - t;                       // menor custo = mais forte
+    if (s.dir === "low") t = 1 - t;
     if (t < 0.15) return "";
-    return `background:color-mix(in srgb,var(--scale-ink) ${Math.round(t*30)}%,transparent)`;
+    return `background:color-mix(in srgb,var(--scale-ink) ${Math.round(t*32)}%,transparent)`;
   };
 
-  const tot = derive(list.reduce((t,r) => {
-    for (const k of ["spend","gross","imp","clk","lpv","ic","sales","rev"]) t[k] += r[k];
-    return t;
-  }, blank()));
-
-  const head = COLS.map(c => {
-    const active = STATE.sort.key === c.k;
+  const head = TCOLS.map(c => {
+    const active = key === c.k;
     const arw = active ? (dir === 1 ? "▲" : "▼") : "▾";
-    const label = c.k === "label"
-      ? ({campaign:"Campanha", adset:"Conjunto", ad:"Anúncio"})[STATE.level]
-      : c.label;
-    return `<th data-k="${c.k}"${active ? " data-active" : ""} title="ordenar">${label}<span class="arw">${arw}</span></th>`;
+    return `<th data-k="${c.k}"${active ? " data-active" : ""} title="${c.hint || "ordenar"}">${c.label}<span class="arw">${arw}</span></th>`;
   }).join("");
 
-  const body = list.map(r => `<tr${r.spend > 0 ? "" : ' class="muted-row"'}>
-      <td>${escape_(r.label)}${r.parent ? `<br><span style="font-size:11px;color:var(--ink-3);font-weight:450">${escape_(r.parent)}</span>` : ""}</td>
-      ${COLS.slice(1).map(c => {
+  const rowHTML = r => {
+    const exp = r.level < 2 && r.kids && r.kids.length > 0;
+    const open = STATE.expanded.has(r.key);
+    const caret = `<span class="caret">${exp ? "▸" : ""}</span>`;
+    return `<tr class="lv${r.level}${exp ? " exp" : ""}${open ? " open" : ""}" data-key="${encodeURIComponent(r.key)}">
+      <td><span class="nm">${caret}${escape_(r.label)}</span></td>
+      ${TCOLS.slice(1).map(c => {
         const st = c.scale ? shade(c.k, r[c.k]) : "";
         const v = c.fmt(r[c.k]);
         return `<td>${st ? `<span class="cell-scale" style="${st}">${v}</span>` : v}</td>`;
       }).join("")}
-    </tr>`).join("");
+    </tr>`;
+  };
+
+  const tot = derive(camps.reduce((t,r) => { for (const k of RAW) t[k] += r[k]; return t; }, blank()));
+  const rows = flatten(camps);
+  const unRow = un.sales > 0
+    ? `<tr class="lv0 muted-row"><td><span class="nm"><span class="caret"></span>— sem atribuição (venda sem UTM utilizável) —</span></td>${TCOLS.slice(1).map(c => `<td>${c.k === "sales" || c.k === "rev" ? c.fmt(un[c.k]) : "—"}</td>`).join("")}</tr>`
+    : "";
 
   document.getElementById("tbl").innerHTML = `
     <thead><tr>${head}</tr></thead>
-    <tbody>${body || `<tr><td colspan="${COLS.length}" style="text-align:center;color:var(--ink-3);padding:32px">Nenhum dado no período.</td></tr>`}</tbody>
-    <tfoot><tr><td>Total (${list.length})</td>${COLS.slice(1).map(c => `<td>${c.fmt(tot[c.k])}</td>`).join("")}</tr></tfoot>`;
+    <tbody>${rows.map(rowHTML).join("") || `<tr><td colspan="${TCOLS.length}" style="text-align:center;color:var(--ink-3);padding:32px">Nenhum dado no período.</td></tr>`}${unRow}</tbody>
+    <tfoot><tr><td>Total — ${camps.length} campanha(s)</td>${TCOLS.slice(1).map(c => `<td>${c.fmt(tot[c.k])}</td>`).join("")}</tr></tfoot>`;
 
+  document.querySelectorAll("#tbl tbody tr.exp").forEach(tr => {
+    tr.querySelector("td:first-child").onclick = () => {
+      const k = decodeURIComponent(tr.dataset.key);
+      if (STATE.expanded.has(k)) STATE.expanded.delete(k); else STATE.expanded.add(k);
+      renderOpt();
+    };
+  });
   document.querySelectorAll("#tbl thead th").forEach(th => {
     th.onclick = () => {
       const k = th.dataset.k;
-      STATE.sort = (STATE.sort.key === k) ? {key:k, dir:-STATE.sort.dir} : {key:k, dir:k === "label" ? 1 : -1};
-      renderTable();
+      STATE.treeSort = (key === k) ? {key:k, dir:-dir} : {key:k, dir:k === "label" ? 1 : -1};
+      renderOpt();
     };
   });
+}
+
+/* ============================================================ visão diária */
+function renderDaily(){
+  const rows = daily(STATE.from, STATE.to).reverse();   // mais recente no topo
+  const scales = {};
+  for (const c of DCOLS.filter(c => c.scale)){
+    const vals = rows.filter(r => r.spend > 0 && r[c.k] !== null && isFinite(r[c.k])).map(r => r[c.k]);
+    if (vals.length > 1) scales[c.k] = {min:Math.min(...vals), max:Math.max(...vals), dir:c.scale};
+  }
+  const heat = (k, v) => {
+    const s = scales[k];
+    if (!s || v === null || !isFinite(v) || s.max === s.min) return "";
+    let t = (v - s.min)/(s.max - s.min);
+    if (s.dir === "low") t = 1 - t;                       // t=1 bom (verde), t=0 ruim (vermelho)
+    const hue = t >= 0.5 ? "var(--good)" : "var(--critical)";
+    const strength = Math.round(Math.abs(t - 0.5) * 2 * 32);
+    return strength < 6 ? "" : `background:color-mix(in srgb,${hue} ${strength}%,transparent)`;
+  };
+  const head = DCOLS.map(c => `<th title="${c.hint || ""}">${c.label}</th>`).join("");
+  const body = rows.map(r => `<tr>${DCOLS.map(c => {
+    if (c.k === "d") return `<td>${dayFull(r.d)}</td>`;
+    const st = c.scale ? heat(c.k, r[c.k]) : "";
+    const v = c.fmt(r[c.k]);
+    return `<td>${st ? `<span class="cell-scale" style="${st}">${v}</span>` : v}</td>`;
+  }).join("")}</tr>`).join("");
+  document.getElementById("dtbl").innerHTML = `<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
 }
 
 /* ============================================================ shell */
@@ -675,6 +1008,8 @@ function shell(){
     <div class="controls">
       <div class="grp">
         <label>Período</label>
+        <button class="btn" data-preset="today">Hoje</button>
+        <button class="btn" data-preset="yesterday">Ontem</button>
         <button class="btn" data-preset="7">7 dias</button>
         <button class="btn" data-preset="14">14 dias</button>
         <button class="btn" data-preset="30">30 dias</button>
@@ -692,22 +1027,33 @@ function shell(){
       </div>
     </div>
 
-    <div class="kpis" id="kpis"></div>
+    <div class="panel"><div class="health" id="health"></div></div>
+
+    <div class="hero" id="hero"></div>
+    <p class="hero-line" id="heroLine" style="margin-bottom:14px"></p>
 
     <div class="grid-funnel">
       <div class="panel">
         <h2>Funil completo</h2>
         <p class="note">Investimento → Impressões → Cliques → Page views → Checkouts → Vendas.
-          Largura das barras em <strong>escala logarítmica</strong> (impressões são ~3 ordens de grandeza
-          maiores que vendas); os valores absolutos, a taxa de passagem entre etapas e o custo por
-          resultado estão escritos ao lado.</p>
+          Cada etapa mostra o <strong>volume</strong> (bloco verde, escurecendo conforme desce) e, à direita,
+          o <strong>custo</strong> e a <strong>taxa de passagem</strong> para a etapa seguinte.</p>
+        <div class="goalrow">Meta de investimento: R$
+          <input type="number" id="goal" min="0" step="100" placeholder="ex.: 5000" inputmode="numeric">
+          <span style="opacity:.7">opcional — mostra o % do orçamento gasto</span></div>
         <div class="funnel" id="funnel"></div>
       </div>
       <div class="panel">
-        <h2>Investimento e vendas por dia</h2>
-        <p class="note">Duas escalas independentes, lado a lado — nunca sobrepostas num eixo duplo.</p>
-        <div id="chSpend" style="margin-bottom:6px"></div>
-        <div id="chSales"></div>
+        <h2>Resultados por dia</h2>
+        <p class="note">Barras = <b style="color:var(--ink-2)">Investimento c/ imposto</b> (eixo esq., R$) ·
+          linha = <b style="color:var(--ink-2)">Vendas</b> (eixo dir., nº).</p>
+        <div class="legend" id="legA"></div>
+        <div id="chA"></div>
+        <h2 style="margin-top:20px">Faturamento × Investimento × ROAS</h2>
+        <p class="note">Barras = <b style="color:var(--ink-2)">Faturamento</b> e <b style="color:var(--ink-2)">Investimento</b> (eixo esq., R$) ·
+          linha = <b style="color:var(--ink-2)">ROAS</b> (eixo dir.).</p>
+        <div class="legend" id="legB"></div>
+        <div id="chB"></div>
       </div>
     </div>
 
@@ -722,19 +1068,21 @@ function shell(){
     </div>
 
     <div class="panel">
-      <h2>Otimização — onde o resultado sai mais barato</h2>
+      <h2>Visão diária — principais métricas por dia</h2>
+      <p class="note">Uma linha por dia, mais recente no topo. Heatmap por coluna: <b style="color:var(--good-text)">verde = melhor</b>,
+        <b style="color:var(--critical)">vermelho = pior</b> no período — CPM, CPC e CAC quanto menores melhor; ROAS quanto maior melhor.</p>
+      <div class="tblwrap"><table id="dtbl" class="daily"></table></div>
+    </div>
+
+    <div class="panel">
+      <h2>Otimização — Campanha › Conjunto › Anúncio</h2>
       <p class="note">
-        Clique em qualquer cabeçalho para ordenar. Sombreado mais forte = melhor
-        (CAC mais barato, ROAS mais alto). Linhas em itálico têm venda atribuída mas
-        nenhum gasto no período. ${okSales} de ${m.counts.sales_rows} vendas estão atribuídas aqui;
-        ${at.none + at.unmatched} sem UTM utilizável entram no total geral, mas não nesta tabela.
+        Clique numa <b style="color:var(--ink-1)">campanha</b> pra abrir os conjuntos, e num conjunto pra abrir os anúncios.
+        Clique nos cabeçalhos pra ordenar. CAC e ROAS coloridos (verde = melhor).
+        ${okSales} de ${m.counts.sales_rows} vendas estão atribuídas a uma campanha;
+        ${at.none + at.unmatched} sem UTM utilizável aparecem em “sem atribuição”.
       </p>
-      <div class="tabs">
-        <button class="btn" data-level="campaign">Por campanha</button>
-        <button class="btn" data-level="adset">Por conjunto</button>
-        <button class="btn" data-level="ad">Por anúncio</button>
-      </div>
-      <div class="tblwrap"><table id="tbl"></table></div>
+      <div class="tblwrap"><table id="tbl" class="tree"></table></div>
     </div>
 
     ${(m.warnings||[]).map(w => `<div class="warn"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="var(--warning)" stroke-width="1.6"><path d="M8 1.8 15 14H1L8 1.8Z" stroke-linejoin="round"/><path d="M8 6.2v3.4M8 11.8v.05" stroke-linecap="round"/></svg><span>${escape_(w)}</span></div>`).join("")}
@@ -754,10 +1102,13 @@ function shell(){
 
   // --- listeners ---
   document.querySelectorAll("[data-preset]").forEach(b => b.onclick = () => {
-    if (b.dataset.preset === "all") return setPeriod(m.date_min, m.date_max, "all");
-    const n = +b.dataset.preset;
+    const p = b.dataset.preset;
+    if (p === "all")   return setPeriod(m.date_min, m.date_max, "all");
+    if (p === "today") return setPeriod(m.date_max, m.date_max, "today");
+    if (p === "yesterday"){ const y = addDays(m.date_max, -1); const f = y < m.date_min ? m.date_min : y; return setPeriod(f, f, "yesterday"); }
+    const n = +p;
     const from = addDays(m.date_max, -(n-1));
-    setPeriod(from < m.date_min ? m.date_min : from, m.date_max, b.dataset.preset);
+    setPeriod(from < m.date_min ? m.date_min : from, m.date_max, p);
   });
   const clampDates = () => {
     let f = document.getElementById("from").value, t = document.getElementById("to").value;
@@ -774,18 +1125,22 @@ function shell(){
     e.currentTarget.setAttribute("aria-pressed", STATE.compare);
     render();
   };
-  document.querySelectorAll("[data-level]").forEach(b => b.onclick = () => {
-    STATE.level = b.dataset.level;
-    document.querySelectorAll("[data-level]").forEach(x => x.classList.toggle("on", x === b));
-    renderTable();
-  });
   document.querySelectorAll("[data-metric]").forEach(b => b.onclick = () => {
     STATE.metric = b.dataset.metric;
     document.querySelectorAll("[data-metric]").forEach(x => x.classList.toggle("on", x === b));
     render();
   });
-  document.querySelector('[data-level="campaign"]').classList.add("on");
   document.querySelector('[data-metric="spend"]').classList.add("on");
+
+  // meta de investimento (guardada no navegador)
+  const goalInput = document.getElementById("goal");
+  try { const g = localStorage.getItem("funnel-goal"); if (g){ STATE.goal = +g; goalInput.value = g; } } catch(e){}
+  goalInput.oninput = () => {
+    const v = parseFloat(goalInput.value);
+    STATE.goal = isFinite(v) && v > 0 ? v : null;
+    try { STATE.goal ? localStorage.setItem("funnel-goal", STATE.goal) : localStorage.removeItem("funnel-goal"); } catch(e){}
+    renderFunnel(aggregate(STATE.from, STATE.to));
+  };
 
   setPeriod(m.date_min, m.date_max, "all");
 }
