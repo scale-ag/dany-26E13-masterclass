@@ -706,6 +706,24 @@ const SUB = [
 const CAC_GOAL = 110;   // teto de CAC definido pelo cliente (R$)
 const TICKET   = 29;    // ticket do produto (R$) — usado só p/ derivar o piso de ROAS = ticket/teto
 
+/* Bandas de referência do funil pós-clique (rules-of-thumb de mercado, EDITÁVEIS).
+   Todas "quanto maior melhor": rate ≥ good = 🟢 · entre good e bad = 🟡 · < bad = 🔴.
+   Ajuste os números aqui pra mudar como os insights classificam cada etapa. */
+const FUNNEL_BANDS = {
+  cr:        {label:"Connect rate (clique→página)", good:0.80, bad:0.60,
+              advice:"perda técnica — checar velocidade de carregamento e o pixel/rastreamento da página"},
+  lpCheck:   {label:"Página → checkout",            good:0.20, bad:0.10,
+              advice:"a página/VSL não está levando gente ao checkout — testar oferta, título, prova social e CTA"},
+  convCheck: {label:"Checkout → compra",            good:0.50, bad:0.35,
+              advice:"fricção no checkout — no Brasil comece pelo Pix fácil; depois campos, opções de pagamento e gatilhos de confiança"}
+};
+function stageStatus(v, band){
+  if (v == null || !isFinite(v)) return null;
+  if (v >= band.good) return {level:"good", cls:"g", word:"saudável"};
+  if (v >= band.bad)  return {level:"warn", cls:"y", word:"atenção"};
+  return {level:"bad", cls:"r", word:"ruim"};
+}
+
 /* Ordem de colunas padrão do funil (aplicada na árvore e na visão diária).
    Definida pelo cliente: Investimento → CPM → CPC → CTR → CR → LP/Checkout →
    Checkouts → Custo Checkout → Vendas → CAC → ROAS → Conv. Checkout → Conv. LP. */
@@ -1236,21 +1254,31 @@ function renderReport(){
   const campX = `Escalar: ${scale.slice(0,5).map(c => c.label + " (CAC " + M.money(c.cac) + ")").join("; ") || "—"}.\nCortar/revisar: ${cut.slice(0,5).map(c => c.label + " (" + M.money(c.spend) + ", " + int(c.sales) + " vd)").join("; ") || "—"}.\nObservar: ${watch.slice(0,4).map(c => c.label).join("; ") || "—"}.`;
   brief.push({t:"Campanhas — o que fazer", h:campHtml, x:campX});
 
-  // -- insights (mantido, era o que você curtiu) --
+  // -- insights (gargalo por BANDA de mercado, não pelo menor número absoluto) --
   const ins = [];
   const cr = traf.cr, lp = traf.lpCheck, cc = traf.convCheck;
+  let primary = null;
   if (cr != null && lp != null && cc != null){
     ins.push(["🔎", `<b>Caminho depois do clique:</b> de cada 100 cliques, ~${Math.round(cr*100)} chegam na página, ~${Math.round(cr*lp*100)} iniciam checkout e ~${(cr*lp*cc*100).toFixed(1)} compram.`]);
-    const stages = [
-      {name:"clique → página (connect rate)", rate:cr, advice:"pode ser velocidade de carregamento ou rastreamento da página"},
-      {name:"página → checkout", rate:lp, advice:"a página/oferta não leva gente suficiente ao checkout — testar título, prova social e CTA"},
-      {name:"checkout → compra", rate:cc, advice:"muita gente inicia mas não finaliza — testar checkout, preço e formas de pagamento"}
-    ];
-    const b = stages.slice().sort((a,z) => a.rate - z.rate)[0];
-    ins.push(["⛔", `<b>Maior gargalo:</b> <b>${b.name}</b>, onde só ${M.pct1(b.rate)} avançam. Foco: ${b.advice}.`]);
+    const stgs = [
+      {b:FUNNEL_BANDS.cr,        v:cr, p:trafPrev.cr},
+      {b:FUNNEL_BANDS.lpCheck,   v:lp, p:trafPrev.lpCheck},
+      {b:FUNNEL_BANDS.convCheck, v:cc, p:trafPrev.convCheck}
+    ].map(s => ({...s, st:stageStatus(s.v, s.b)}));
+    ins.push(["🚦", `<b>Etapas vs mercado:</b> ` + stgs.map(s => `${s.b.label.split(" (")[0]} <span class="rep-flag ${s.st.cls}">${M.pct1(s.v)}</span>`).join(" · ")]);
+    const rank = {bad:0, warn:1, good:2};
+    const flagged = stgs.filter(s => s.st.level !== "good")
+      .sort((a,z) => (rank[a.st.level] - rank[z.st.level]) || (((z.b.good - z.v)/z.b.good) - ((a.b.good - a.v)/a.b.good)));
+    if (flagged.length){
+      primary = flagged[0];
+      let trend = "";
+      if (primary.p != null && isFinite(primary.p))
+        trend = primary.v < primary.p ? ` — piorou vs período anterior (era ${M.pct1(primary.p)})` : primary.v > primary.p ? ` — mas vem melhorando (era ${M.pct1(primary.p)})` : "";
+      ins.push(["⛔", `<b>Maior gargalo:</b> <b>${primary.b.label}</b> em ${M.pct1(primary.v)} (${primary.st.word} — faixa boa ≥ ${M.pct1(primary.b.good)})${trend}. Foco: ${primary.b.advice}.`]);
+    } else {
+      ins.push(["✅", `<b>Sem gargalo claro:</b> as 3 etapas pós-clique estão dentro das faixas de mercado. Funil redondo — o ganho vem mais de escala/criativo do que de conversão.`]);
+    }
   }
-  if (cr != null && cr < 0.9)
-    ins.push(["🐢", `<b>Connect rate:</b> ${M.pct1(cr)} dos cliques chegam na página — perdendo ${M.pct1(1-cr)} no caminho. Checar velocidade e pixel da página.`]);
   if (over && cpcCeil != null)
     ins.push(traf.cpc > cpcCeil
       ? ["💸", `<b>Clique caro:</b> ${M.money(traf.cpc)} vs ${M.money(cpcCeil)} que a meta comporta. Atacar criativo/público (CPM) ou conversão da página.`]
@@ -1271,10 +1299,7 @@ function renderReport(){
   if (cut.length) sug.push(`Cortar/pausar o que drena verba: ${cut.slice(0,3).map(c => escape_(c.label)).join(", ")}.`);
   burning.slice(0,2).forEach(a => sug.push(`Pausar o anúncio "${escape_(a.label)}" (${M.money(a.spend)} gastos, ${a.sales === 0 ? "sem venda" : "CAC " + M.money(a.cac)}).`));
   if (promising.length) sug.push(`Duplicar e criar variações dos campeões de eficiência: ${promising.slice(0,3).map(a => escape_(a.label)).join(", ")}.`);
-  if (cr != null && lp != null && cc != null){
-    const st = [["connect rate (velocidade/pixel)",cr],["página→checkout (oferta/CTA)",lp],["checkout→compra (checkout/pagamento)",cc]].sort((a,b)=>a[1]-b[1])[0];
-    sug.push(`Atacar o gargalo de ${st[0]} — hoje só ${M.pct1(st[1])} passam.`);
-  }
+  if (primary) sug.push(`Atacar o gargalo de ${primary.b.label} (hoje ${M.pct1(primary.v)}, faixa boa ≥ ${M.pct1(primary.b.good)}): ${primary.b.advice}.`);
   if (over && cpcCeil != null) sug.push(traf.cpc > cpcCeil
     ? `Trazer o CPC de ${M.money(traf.cpc)} pra ~${M.money(cpcCeil)} (criativo/público) ou subir a conversão pra ${M.pct1(convNeeded)}.`
     : `CPC ok — foco em conversão do funil pra ganhar folga no CAC.`);
@@ -1303,9 +1328,9 @@ function renderReport(){
         <div><h2>📄 Relatório — ${escape_(perLabel)}</h2>
           <p class="sub" style="margin-top:2px">Muda sozinho conforme o período · atualizado ${DATA.meta.generated_at_br}</p></div>
       </div>
-      ${briefingBlock}
-      <p class="sub" style="margin:0 0 8px">⬇️ Abaixo, os blocos visuais limpos — é o que você manda em print pro cliente.</p>
+      <p class="sub" style="margin:0 0 8px">⬇️ Blocos visuais limpos (é o que você manda em print pro cliente). Seu <b style="color:var(--ink-2)">briefing interno</b> fica no final.</p>
       ${secVisual}
+      ${briefingBlock}
     </div>`;
 
   document.querySelectorAll("#reportView [data-note]").forEach(t => {
