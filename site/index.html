@@ -108,6 +108,21 @@ button,select,input{font:inherit;color:inherit}
 .insight .tx b{color:var(--ink-1)}
 .rep-copy{appearance:none;border:1px solid var(--brand);background:var(--brand);color:var(--brand-ink);font:inherit;font-weight:650;font-size:13px;padding:9px 15px;border-radius:9px;cursor:pointer;white-space:nowrap}
 .rep-copy:hover{filter:brightness(1.06)}
+/* briefing interno do gestor */
+.briefing{background:var(--brand-soft);border:1.5px dashed color-mix(in srgb,var(--brand) 55%,transparent);border-radius:14px;padding:18px 20px;margin-bottom:22px}
+.briefing .bh{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px}
+.briefing .bh h3{margin:0;font-size:15.5px;font-weight:680}
+.brief-sub{margin-top:16px}
+.brief-sub .bt{font-size:12px;font-weight:700;color:var(--brand);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px}
+.brief-sub p{margin:0;font-size:13.5px;line-height:1.6;color:var(--ink-1)}
+.brief-sub ul{margin:6px 0 0;padding-left:18px}
+.brief-sub li{font-size:13.5px;line-height:1.55;color:var(--ink-1);margin:5px 0}
+.brief-scratch{margin-top:16px}
+.brief-scratch textarea{width:100%;background:var(--card);border:1px solid var(--ring);border-radius:9px;padding:9px 11px;font:inherit;font-size:13.5px;color:var(--ink-1);resize:vertical;min-height:56px}
+.rep-flag{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;margin-right:6px}
+.rep-flag.g{background:color-mix(in srgb,var(--good) 22%,transparent);color:var(--good-text)}
+.rep-flag.r{background:color-mix(in srgb,var(--critical) 22%,transparent);color:var(--critical)}
+.rep-flag.y{background:color-mix(in srgb,var(--warning) 24%,transparent);color:var(--warning)}
 
 /* ---------------------------------------------------------------- filtros */
 .controls{
@@ -1104,26 +1119,23 @@ function renderReport(){
   const {from, to} = STATE, days = diffDays(from, to) + 1;
   const pTo = addDays(from, -1), pFrom = addDays(pTo, -(days-1));
   const sm = STATE.mode;
-  STATE.mode = "total";   const tot = aggregate(from, to);
-  STATE.mode = "traffic"; const traf = aggregate(from, to), trafPrev = aggregate(pFrom, pTo);
-  const drows = daily(from, to);
-  const tree = buildTree(from, to);
+  STATE.mode = "total";   const tot = aggregate(from, to),  dTot  = daily(from, to);
+  STATE.mode = "traffic"; const traf = aggregate(from, to), trafPrev = aggregate(pFrom, pTo), dTraf = daily(from, to), tree = buildTree(from, to);
   STATE.mode = sm;
   const ads = adsByName(from, to);
   const T = CAC_GOAL;
-
   const perLabel = days === 1 ? dayFull(from) : `${dayFull(from)} a ${dayFull(to)} · ${days} dias`;
   const over = traf.cac != null && traf.cac > T;
   const repCac = c => c == null || !isFinite(c) ? "—" : `<b style="color:${c <= T ? "var(--good-text)" : "var(--critical)"}">${M.money(c)}</b>`;
-  const P = [];  // parágrafos em texto puro, pro botão "copiar"
+  const dTbl = rows => `<div class="tblwrap"><table class="daily" style="min-width:520px"><thead><tr>
+      <th style="text-align:left">Dia</th><th>Gasto</th><th>Vendas</th><th>CAC</th><th>ROAS</th><th>Conv.Checkout</th></tr></thead>
+    <tbody>${[...rows].reverse().map(r => `<tr><td style="text-align:left">${dayFull(r.d)}</td><td>${M.money(r.spend)}</td><td>${int(r.sales)}</td><td>${repCac(r.cac)}</td><td>${M.x(r.roas)}</td><td>${M.pct1(r.convCheck)}</td></tr>`).join("")}</tbody></table></div>`;
 
-  /* ---- 1. Visão geral ---- */
-  const t1 = `No período (${perLabel}), investimos ${M.money(tot.spend)} em anúncios (já com imposto) e geramos ${int(tot.allSales)} vendas no total, somando ${M.money(tot.allRev)} em receita. Dessas, ${int(traf.trafSales)} vieram do tráfego pago e ${int(traf.orgSales)} foram orgânicas/diretas.`;
-  P.push("📊 VISÃO GERAL\n" + t1);
-  const sec1 = `
+  /* =================== SEÇÕES VISUAIS (limpas — prontas pro print) =================== */
+  const secVisual = `
     <div class="rep-sec">
       <div class="step">1 · VISÃO GERAL</div>
-      <h3>📊 Como está o funil no total</h3>
+      <h3>📊 Funil no total</h3>
       <div class="rep-stats">
         ${repStat("Investimento", M.money(tot.spend))}
         ${repStat("Receita total", M.money(tot.allRev))}
@@ -1131,21 +1143,10 @@ function renderReport(){
         ${repStat("ROAS total", M.x(tot.roas))}
         ${repStat("CAC total", M.money(tot.cac))}
       </div>
-      <p class="rep-p">${t1}</p>
-    </div>`;
-
-  /* ---- 2. Tráfego pago ---- */
-  let t2 = `Olhando só o tráfego pago: foram ${int(traf.sales)} vendas, com custo por venda (CAC) de ${M.money(traf.cac)}. `;
-  t2 += traf.cac == null ? "Ainda sem vendas de tráfego no período."
-      : over ? `Está ${M.money(traf.cac - T)} acima da nossa meta de ${M.money(T)} — dá pra apertar, mas seguimos perto do ideal.`
-             : `Está dentro da meta de ${M.money(T)}, com folga de ${M.pct1((T - traf.cac)/T)}. 👍`;
-  if (traf.cac != null && trafPrev.cac != null && isFinite(trafPrev.cac))
-    t2 += ` Comparando com o período anterior, o CAC ${traf.cac < trafPrev.cac ? "melhorou" : "subiu"} (de ${M.money(trafPrev.cac)} para ${M.money(traf.cac)}).`;
-  P.push("🎯 TRÁFEGO PAGO\n" + t2);
-  const sec2 = `
+    </div>
     <div class="rep-sec">
       <div class="step">2 · TRÁFEGO PAGO</div>
-      <h3>🎯 Como está só o tráfego (o que a mídia gera)</h3>
+      <h3>🎯 Só o tráfego (o que a mídia gera)</h3>
       <div class="rep-stats">
         ${repStat("Investimento", M.money(traf.spend))}
         ${repStat("Receita tráfego", M.money(traf.trafRev))}
@@ -1153,144 +1154,160 @@ function renderReport(){
         ${repStat("CAC tráfego", repCac(traf.cac))}
         ${repStat("Meta de CAC", M.money(T))}
       </div>
-      <p class="rep-p">${t2}</p>
-      ${repNote("obs-trafego", "Sua observação sobre o tráfego (opcional)")}
+    </div>
+    <div class="rep-sec">
+      <div class="step">3 · DIA A DIA</div>
+      <h3>📅 Funil dia a dia</h3>
+      <div class="bt" style="font-size:12px;font-weight:700;color:var(--ink-2);margin:4px 0 6px">Funil total (todas as vendas)</div>
+      ${dTbl(dTot)}
+      <div class="bt" style="font-size:12px;font-weight:700;color:var(--ink-2);margin:16px 0 6px">Funil só tráfego pago (utm_source = ${escape_(DATA.meta.traffic_source||"meta-ads")})</div>
+      ${dTbl(dTraf)}
+    </div>
+    <div class="rep-sec">
+      <div class="step">4 · CAMPANHAS</div>
+      <h3>🗂️ Campanhas</h3>
+      <div class="tblwrap"><table class="daily" style="min-width:520px"><thead><tr>
+        <th style="text-align:left">Campanha</th><th>Gasto</th><th>Vendas</th><th>CAC</th><th>ROAS</th><th>Conv.Checkout</th>
+      </tr></thead><tbody>${tree.camps.filter(c=>c.spend>0).sort((a,b)=>b.spend-a.spend).map(c => `<tr>
+        <td style="text-align:left">${escape_(c.label)}</td><td>${M.money(c.spend)}</td><td>${int(c.sales)}</td><td>${repCac(c.cac)}</td><td>${M.x(c.roas)}</td><td>${M.pct1(c.convCheck)}</td></tr>`).join("")}</tbody></table></div>
+    </div>
+    <div class="rep-sec">
+      <div class="step">5 · MELHORES ANÚNCIOS</div>
+      <h3>🏆 Destaques pra produzir mais</h3>
+      ${(() => {
+        const b = ads.filter(a => a.sales > 0).sort((a,z) => (z.sales - a.sales) || (a.cac - z.cac)).slice(0, 6);
+        return b.length ? b.map(a => `<div class="rep-ad">
+          <div><span class="nm">${escape_(a.label)}</span> <span class="mt">· ${int(a.sales)} vendas · CAC ${M.money(a.cac)} · ${M.money(a.spend)} gastos</span></div>
+          <input data-adlink="${encodeURIComponent(a.label)}" placeholder="cole o link do anúncio (Instagram)">
+        </div>`).join("") : `<p class="rep-p muted">Sem vendas atribuídas a um anúncio específico no período.</p>`;
+      })()}
     </div>`;
 
-  /* ---- 3. Dia a dia ---- */
-  const ds = drows.filter(r => r.sales > 0);
-  let t3;
+  /* =================== BRIEFING DO GESTOR (interno, profundo) =================== */
+  const brief = [];   // {t, h, x}
+  const nf = v => v == null || !isFinite(v) ? "—" : nf1.format(v);
+
+  // -- leitura geral --
+  const orgShare = tot.allSales > 0 ? traf.orgSales / tot.allSales : 0;
+  const xGeral = `Investimento ${M.money(traf.spend)} no período. Total: ${int(tot.allSales)} vendas (${M.money(tot.allRev)}), CAC total ${M.money(tot.cac)}. Só mídia: ${int(traf.sales)} vendas (${M.money(traf.trafRev)}), CAC ${M.money(traf.cac)}. Orgânico/direto: ${int(traf.orgSales)} vendas = ${M.pct1(orgShare)} do total. `
+    + (traf.orgSales > 0 ? `Atenção: o orgânico puxa o CAC total pra baixo (${M.money(tot.cac)}), mas a régua de mídia é o CAC do tráfego (${M.money(traf.cac)}).` : `Praticamente tudo veio de mídia paga no período.`);
+  brief.push({t:"Leitura geral", h:`<p>${xGeral}</p>`, x:xGeral});
+
+  // -- tráfego (decomposição) --
+  const gap = traf.cac != null ? traf.cac - T : null;
+  const clkPerSale = div(traf.clk, traf.sales);
+  const cpcCeil = (traf.conv != null && isFinite(traf.conv)) ? T * traf.conv : null;
+  const convNeeded = (traf.cpc != null && traf.cpc > 0) ? traf.cpc / T : null;
+  let xTraf = traf.cac == null ? "Sem vendas de tráfego no período — sem CAC pra avaliar."
+    : `CAC do tráfego ${M.money(traf.cac)} vs meta ${M.money(T)} (${over ? `+${M.money(gap)} acima` : `${M.money(-gap)} de folga`}). `
+      + (trafPrev.cac != null && isFinite(trafPrev.cac) ? `Vs período anterior: ${traf.cac < trafPrev.cac ? "caiu" : "subiu"} de ${M.money(trafPrev.cac)}. ` : "")
+      + `Anatomia: cada venda custou ~${nf(clkPerSale)} cliques a ${M.money(traf.cpc)} cada. `
+      + (over && cpcCeil != null ? `Pra bater a meta sem mexer na conversão, o CPC precisa cair pra ${M.money(cpcCeil)} (${M.pct1((traf.cpc - cpcCeil)/traf.cpc)} mais barato) — OU, mantendo o CPC, a conversão clique→venda subir de ${M.pct1(traf.conv)} pra ${M.pct1(convNeeded)}.`
+        : !over ? `Tem folga: dá pra escalar sem estourar, de olho pra o CPC/conversão não piorarem.` : "");
+  brief.push({t:"Tráfego — decomposição do CAC", h:`<p>${xTraf}</p>`, x:xTraf});
+
+  // -- dia a dia --
+  const ds = dTraf.filter(r => r.sales > 0);
+  let xDia;
   if (ds.length){
     const best = ds.reduce((a,b) => b.cac < a.cac ? b : a);
     const worst = ds.reduce((a,b) => b.cac > a.cac ? b : a);
     const mid = Math.ceil(ds.length/2);
-    const avg = arr => { const s = arr.reduce((x,r) => x + (r.spend||0), 0), v = arr.reduce((x,r) => x + (r.sales||0), 0); return v > 0 ? s/v : null; };
-    const early = avg(ds.slice(0, mid)), late = avg(ds.slice(mid));
-    const trend = (early != null && late != null && ds.length >= 3) ? (late < early ? " Nos dias mais recentes o CAC vem caindo — bom sinal." : late > early ? " Nos dias mais recentes o CAC subiu um pouco — de olho." : "") : "";
-    t3 = `No dia a dia, o melhor dia foi ${dayFull(best.d)} (${int(best.sales)} vendas, CAC ${M.money(best.cac)}) e o mais caro foi ${dayFull(worst.d)} (CAC ${M.money(worst.cac)}).${trend}`;
-  } else {
-    t3 = "Sem vendas de tráfego dia a dia no período selecionado.";
-  }
-  P.push("📅 DIA A DIA\n" + t3);
-  const dailyRows = [...drows].reverse().map(r => `<tr>
-      <td style="text-align:left">${dayFull(r.d)}</td><td>${M.money(r.spend)}</td><td>${int(r.sales)}</td>
-      <td>${repCac(r.cac)}</td><td>${M.x(r.roas)}</td><td>${M.pct1(r.convCheck)}</td></tr>`).join("");
-  const sec3 = `
-    <div class="rep-sec">
-      <div class="step">3 · DIA A DIA</div>
-      <h3>📅 Como o funil se comporta por dia</h3>
-      <div class="tblwrap"><table class="daily" style="min-width:520px"><thead><tr>
-        <th style="text-align:left">Dia</th><th>Gasto</th><th>Vendas</th><th>CAC</th><th>ROAS</th><th>Conv. checkout</th>
-      </tr></thead><tbody>${dailyRows}</tbody></table></div>
-      <p class="rep-p">${t3}</p>
-      ${repNote("obs-diario", "Sua observação sobre o dia a dia (ex.: testes que subiu/pausou)")}
-    </div>`;
+    const wavg = arr => { const s = arr.reduce((x,r) => x + r.spend, 0), v = arr.reduce((x,r) => x + r.sales, 0); return v > 0 ? s/v : null; };
+    const early = wavg(ds.slice(0, mid)), late = wavg(ds.slice(mid));
+    const trend = (early != null && late != null && ds.length >= 3) ? (late < early ? "CAC vem caindo nos dias recentes (bom)." : late > early ? "CAC subiu nos dias recentes (de olho)." : "CAC estável.") : "";
+    const heavy = dTraf.filter(r => r.spend > 0 && r.cac != null && r.cac > T).sort((a,b) => b.spend - a.spend)[0];
+    xDia = `Melhor dia ${dayFull(best.d)} (CAC ${M.money(best.cac)}, ${int(best.sales)} vd) · pior ${dayFull(worst.d)} (CAC ${M.money(worst.cac)}). ${trend}`
+      + (heavy ? ` Dia mais caro em verba acima da meta: ${dayFull(heavy.d)} (${M.money(heavy.spend)} gastos, CAC ${M.money(heavy.cac)}) — vale revisar o que rodou nesse dia.` : "");
+  } else xDia = "Sem vendas de tráfego dia a dia no período.";
+  brief.push({t:"Dia a dia", h:`<p>${xDia}</p>`, x:xDia});
 
-  /* ---- 4. Campanhas (macro) ---- */
+  // -- campanhas (estratégico, sem saber o que já foi pausado) --
   const active = tree.camps.filter(c => c.spend > 0);
-  const overC = active.filter(c => c.cac != null && c.cac > T);
-  const underC = active.filter(c => c.cac != null && c.cac <= T);
-  const bestC = underC.filter(c => c.sales > 0).sort((a,b) => a.cac - b.cac)[0];
-  let t4 = `Temos ${active.length} campanha${active.length !== 1 ? "s" : ""} rodando: ${underC.length} com o CAC dentro da meta e ${overC.length} acima. `;
-  t4 += bestC ? `A que melhor performa é "${bestC.label}" (CAC ${M.money(bestC.cac)}). ` : "";
-  t4 += "Estamos concentrando verba nas que convertem melhor e cortando/otimizando as que estão caras.";
-  P.push("🗂️ CAMPANHAS\n" + t4);
-  const topC = active.slice().sort((a,b) => b.spend - a.spend).slice(0, 6);
-  const campRows = topC.map(c => `<tr>
-      <td style="text-align:left">${escape_(c.label)}</td><td>${M.money(c.spend)}</td><td>${int(c.sales)}</td>
-      <td>${repCac(c.cac)}</td><td>${M.x(c.roas)}</td></tr>`).join("");
-  const sec4 = `
-    <div class="rep-sec">
-      <div class="step">4 · CAMPANHAS</div>
-      <h3>🗂️ Cenário das campanhas</h3>
-      <div class="tblwrap"><table class="daily" style="min-width:520px"><thead><tr>
-        <th style="text-align:left">Campanha</th><th>Gasto</th><th>Vendas</th><th>CAC</th><th>ROAS</th>
-      </tr></thead><tbody>${campRows}</tbody></table></div>
-      <p class="rep-p">${t4}</p>
-      ${repNote("obs-campanhas", "Seu plano nas campanhas (ex.: pausei as estouradas, foco nas campeãs)")}
-    </div>`;
+  const scale = active.filter(c => c.cac != null && c.cac <= T && c.sales >= 2).sort((a,b) => a.cac - b.cac);
+  const cut   = active.filter(c => c.spend >= T && (c.sales === 0 || (c.cac != null && c.cac > 1.5*T))).sort((a,b) => b.spend - a.spend);
+  const watch = active.filter(c => !scale.includes(c) && !cut.includes(c)).sort((a,b) => b.spend - a.spend);
+  const line = (c, extra) => `<li><b>${escape_(c.label)}</b> — ${M.money(c.spend)} gastos, ${int(c.sales)} vd, CAC ${repCac(c.cac)}. ${extra}</li>`;
+  const campHtml = `
+    ${scale.length ? `<p><span class="rep-flag g">ESCALAR</span> CAC dentro da meta e com volume — dá pra subir orçamento:</p><ul>${scale.slice(0,5).map(c => line(c, "tem espaço pra mais verba.")).join("")}</ul>` : ""}
+    ${cut.length ? `<p style="margin-top:10px"><span class="rep-flag r">CORTAR / REVISAR</span> drenando verba (CAC alto ou sem venda):</p><ul>${cut.slice(0,5).map(c => line(c, c.sales === 0 ? "gastou e não vendeu — candidata a pausar." : "CAC muito acima da meta — pausar os piores anúncios ou revisar público/criativo.")).join("")}</ul>` : ""}
+    ${watch.length ? `<p style="margin-top:10px"><span class="rep-flag y">OBSERVAR</span> pouco volume/gasto — ainda sem dado pra decidir:</p><ul>${watch.slice(0,4).map(c => line(c, "esperar mais dado ou dar um empurrão pequeno.")).join("")}</ul>` : ""}
+    <p class="rep-p muted" style="margin-top:8px">Não sei o que você já pausou — isto é um raio-x do momento pra você decidir onde mexer.</p>`;
+  const campX = `Escalar: ${scale.slice(0,5).map(c => c.label + " (CAC " + M.money(c.cac) + ")").join("; ") || "—"}.\nCortar/revisar: ${cut.slice(0,5).map(c => c.label + " (" + M.money(c.spend) + ", " + int(c.sales) + " vd)").join("; ") || "—"}.\nObservar: ${watch.slice(0,4).map(c => c.label).join("; ") || "—"}.`;
+  brief.push({t:"Campanhas — o que fazer", h:campHtml, x:campX});
 
-  /* ---- 5. Melhores anúncios ---- */
-  const bestAds = ads.filter(a => a.sales > 0).sort((a,b) => (b.sales - a.sales) || (a.cac - b.cac)).slice(0, 5);
-  P.push("🏆 MELHORES ANÚNCIOS\n" + (bestAds.length ? bestAds.map(a => `${a.label}: ${int(a.sales)} vendas, CAC ${M.money(a.cac)}`).join("\n") : "sem vendas atribuídas a anúncio no período."));
-  const adRows = bestAds.length ? bestAds.map(a => `
-      <div class="rep-ad">
-        <div><span class="nm">${escape_(a.label)}</span> <span class="mt">· ${int(a.sales)} vendas · CAC ${M.money(a.cac)} · ${M.money(a.spend)} gastos</span></div>
-        <input data-adlink="${encodeURIComponent(a.label)}" placeholder="cole o link do anúncio (Instagram) — opcional">
-      </div>`).join("") : `<p class="rep-p muted">Sem vendas atribuídas a um anúncio específico no período.</p>`;
-  const sec5 = `
-    <div class="rep-sec">
-      <div class="step">5 · MELHORES ANÚNCIOS</div>
-      <h3>🏆 Destaques pra produzir mais</h3>
-      <p class="rep-p muted">Os que mais venderam no período — base pra criar novas variações. Cole o link de cada um pra mandar pro cliente.</p>
-      ${adRows}
-    </div>`;
-
-  /* ---- 6. Próximos passos ---- */
-  const sec6 = `
-    <div class="rep-sec">
-      <div class="step">6 · PRÓXIMOS PASSOS</div>
-      <h3>🚀 O que vamos executar</h3>
-      ${repNote("obs-proximos", over
-        ? "Ex.: cortar os anúncios que estão queimando verba, escalar os campeões e trazer o CAC de volta pra meta…"
-        : "Ex.: escalar com cuidado mantendo o CAC no lugar, subir novas estruturas…", 3)}
-    </div>`;
-
-  /* ---- 7. Insights (visão Scale) ---- */
+  // -- insights (mantido, era o que você curtiu) --
   const ins = [];
   const cr = traf.cr, lp = traf.lpCheck, cc = traf.convCheck;
   if (cr != null && lp != null && cc != null){
-    ins.push(["🔎", `<b>Caminho depois do clique:</b> de cada 100 cliques, ~${Math.round(cr*100)} chegam na página, ~${Math.round(cr*lp*100)} iniciam o checkout e ~${(cr*lp*cc*100).toFixed(1)} compram.`]);
+    ins.push(["🔎", `<b>Caminho depois do clique:</b> de cada 100 cliques, ~${Math.round(cr*100)} chegam na página, ~${Math.round(cr*lp*100)} iniciam checkout e ~${(cr*lp*cc*100).toFixed(1)} compram.`]);
     const stages = [
       {name:"clique → página (connect rate)", rate:cr, advice:"pode ser velocidade de carregamento ou rastreamento da página"},
-      {name:"página → checkout", rate:lp, advice:"a página/oferta não está levando gente suficiente ao checkout — testar título, prova social e chamada pra ação"},
-      {name:"checkout → compra", rate:cc, advice:"muita gente inicia mas não finaliza — testar o checkout, o preço e as formas de pagamento"}
+      {name:"página → checkout", rate:lp, advice:"a página/oferta não leva gente suficiente ao checkout — testar título, prova social e CTA"},
+      {name:"checkout → compra", rate:cc, advice:"muita gente inicia mas não finaliza — testar checkout, preço e formas de pagamento"}
     ];
     const b = stages.slice().sort((a,z) => a.rate - z.rate)[0];
-    ins.push(["⛔", `<b>Maior gargalo:</b> a etapa de <b>${b.name}</b>, onde só ${M.pct1(b.rate)} avançam. Foco aqui: ${b.advice}.`]);
+    ins.push(["⛔", `<b>Maior gargalo:</b> <b>${b.name}</b>, onde só ${M.pct1(b.rate)} avançam. Foco: ${b.advice}.`]);
   }
   if (cr != null && cr < 0.9)
-    ins.push(["🐢", `<b>Connect rate:</b> ${M.pct1(cr)} dos cliques chegam na página — estamos perdendo ${M.pct1(1-cr)} no caminho. Vale checar velocidade e rastreamento da página.`]);
-
-  const cpcCeil = traf.conv != null && isFinite(traf.conv) ? T * traf.conv : null;
-  if (over && cpcCeil != null){
+    ins.push(["🐢", `<b>Connect rate:</b> ${M.pct1(cr)} dos cliques chegam na página — perdendo ${M.pct1(1-cr)} no caminho. Checar velocidade e pixel da página.`]);
+  if (over && cpcCeil != null)
     ins.push(traf.cpc > cpcCeil
-      ? ["💸", `<b>Custo do clique:</b> está em ${M.money(traf.cpc)}, acima dos ${M.money(cpcCeil)} que a meta comporta com a conversão atual. Dá pra atacar por dois lados: baratear o clique (criativo/público) ou melhorar a conversão da página.`]
-      : ["✅", `<b>Custo do clique saudável</b> (${M.money(traf.cpc)}). O que segura o CAC acima da meta é a conversão do funil, não o preço da mídia.`]);
-  }
-
-  const burning = ads.filter(a => a.spend >= T && (a.sales === 0 || (a.cac != null && a.cac > 2*T))).sort((a,b) => b.spend - a.spend).slice(0, 3);
-  burning.forEach(a => ins.push(["🔥", `<b>Queimando verba:</b> "${escape_(a.label)}" gastou ${M.money(a.spend)} e ${a.sales === 0 ? "não trouxe nenhuma venda" : `trouxe só ${int(a.sales)} (CAC ${M.money(a.cac)})`} — forte candidato a pausar.`]));
-
-  const promising = ads.filter(a => a.sales > 0 && a.cac != null && a.cac < T*0.8).sort((a,b) => a.cac - b.cac).slice(0, 3);
-  promising.forEach(a => ins.push(["⭐", `<b>Pode surpreender:</b> "${escape_(a.label)}" está com CAC de ${M.money(a.cac)} (bem abaixo da meta) e ${int(a.sales)} vendas — vale colocar mais verba e criar variações.`]));
-
+      ? ["💸", `<b>Clique caro:</b> ${M.money(traf.cpc)} vs ${M.money(cpcCeil)} que a meta comporta. Atacar criativo/público (CPM) ou conversão da página.`]
+      : ["✅", `<b>Clique saudável</b> (${M.money(traf.cpc)}). O que segura o CAC é a conversão do funil, não o preço da mídia.`]);
+  const burning = ads.filter(a => a.spend >= T && (a.sales === 0 || (a.cac != null && a.cac > 2*T))).sort((a,b) => b.spend - a.spend).slice(0, 4);
+  burning.forEach(a => ins.push(["🔥", `<b>Queimando verba:</b> "${escape_(a.label)}" gastou ${M.money(a.spend)} e ${a.sales === 0 ? "não vendeu" : `só ${int(a.sales)} venda(s) (CAC ${M.money(a.cac)})`} — candidato a pausar.`]));
+  const promising = ads.filter(a => a.sales > 0 && a.cac != null && a.cac < T*0.8).sort((a,b) => a.cac - b.cac).slice(0, 4);
+  promising.forEach(a => ins.push(["⭐", `<b>Pode surpreender:</b> "${escape_(a.label)}" CAC ${M.money(a.cac)} com ${int(a.sales)} venda(s) e só ${M.money(a.spend)} gastos — colocar mais verba e criar variações.`]));
   ins.push(["🧭", over
-    ? `<b>Resumo:</b> o tráfego está um pouco acima da meta de CAC, mas perto e evoluindo. Cortar o que queima verba, escalar os campeões e destravar o gargalo acima deve trazer o CAC pra dentro.`
-    : `<b>Resumo:</b> o tráfego está saudável, com CAC dentro da meta. Momento de escalar com cuidado, mantendo o CAC no lugar.`]);
+    ? `<b>Resumo:</b> tráfego um pouco acima da meta de CAC, mas perto. Cortar o que queima verba, escalar os campeões e destravar o gargalo deve trazer pra dentro.`
+    : `<b>Resumo:</b> tráfego saudável, CAC na meta. Momento de escalar com cuidado mantendo o CAC.`]);
+  const insHtml = `<div>${ins.map(i => `<div class="insight"><span class="ico">${i[0]}</span><span class="tx">${i[1]}</span></div>`).join("")}</div>`;
+  brief.push({t:"Insights e gargalos", h:insHtml, x:ins.map(i => "• " + i[1].replace(/<[^>]+>/g, "")).join("\n")});
 
-  P.push("🔎 INSIGHTS E PONTOS DE MELHORIA\n" + ins.map(i => "• " + i[1].replace(/<[^>]+>/g, "")).join("\n"));
-  const sec7 = `
-    <div class="rep-sec" style="border-color:color-mix(in srgb,var(--brand) 30%,transparent)">
-      <div class="step">7 · INSIGHTS</div>
-      <h3>🔎 Análise e pontos de melhoria</h3>
-      <div>${ins.map(i => `<div class="insight"><span class="ico">${i[0]}</span><span class="tx">${i[1]}</span></div>`).join("")}</div>
+  // -- próximos passos (sugestões minhas) --
+  const sug = [];
+  if (scale.length) sug.push(`Subir orçamento (10–20%) nas campanhas com CAC folgado: ${scale.slice(0,3).map(c => escape_(c.label)).join(", ")}.`);
+  if (cut.length) sug.push(`Cortar/pausar o que drena verba: ${cut.slice(0,3).map(c => escape_(c.label)).join(", ")}.`);
+  burning.slice(0,2).forEach(a => sug.push(`Pausar o anúncio "${escape_(a.label)}" (${M.money(a.spend)} gastos, ${a.sales === 0 ? "sem venda" : "CAC " + M.money(a.cac)}).`));
+  if (promising.length) sug.push(`Duplicar e criar variações dos campeões de eficiência: ${promising.slice(0,3).map(a => escape_(a.label)).join(", ")}.`);
+  if (cr != null && lp != null && cc != null){
+    const st = [["connect rate (velocidade/pixel)",cr],["página→checkout (oferta/CTA)",lp],["checkout→compra (checkout/pagamento)",cc]].sort((a,b)=>a[1]-b[1])[0];
+    sug.push(`Atacar o gargalo de ${st[0]} — hoje só ${M.pct1(st[1])} passam.`);
+  }
+  if (over && cpcCeil != null) sug.push(traf.cpc > cpcCeil
+    ? `Trazer o CPC de ${M.money(traf.cpc)} pra ~${M.money(cpcCeil)} (criativo/público) ou subir a conversão pra ${M.pct1(convNeeded)}.`
+    : `CPC ok — foco em conversão do funil pra ganhar folga no CAC.`);
+  if (!over) sug.push(`Escalar com cuidado (horizontal costuma segurar melhor o CAC neste projeto) e monitorar CPC/conversão a cada subida.`);
+  if (!sug.length) sug.push("Sem ação urgente — manter monitoramento diário do CAC.");
+  brief.push({t:"Próximos passos (sugestões)", h:`<ul>${sug.map(s => `<li>${s}</li>`).join("")}</ul>`, x:sug.map(s => "• " + s.replace(/<[^>]+>/g, "")).join("\n")});
+
+  const briefText = `BRIEFING DO GESTOR — ${DATA.meta.title}\n${perLabel}\n\n`
+    + brief.map(s => s.t.toUpperCase() + "\n" + s.x).join("\n\n")
+    + `\n\n— gerado pela dashboard (${DATA.meta.generated_at_br})`;
+
+  const briefingBlock = `
+    <div class="briefing">
+      <div class="bh">
+        <h3>🔒 Briefing do gestor <span style="font-weight:500;font-size:12px;color:var(--ink-3)">— uso interno, pra você montar rápido. Não vai no print/cliente.</span></h3>
+        <button class="rep-copy" id="repCopy">📋 Copiar briefing</button>
+      </div>
+      ${brief.map(s => `<div class="brief-sub"><div class="bt">${s.t}</div>${s.h}</div>`).join("")}
+      <div class="brief-scratch"><div class="bt" style="font-size:12px;font-weight:700;color:var(--brand);margin-bottom:6px">✍️ SUAS ANOTAÇÕES (rascunho)</div>
+        <textarea data-note="scratch" rows="3" placeholder="rascunho livre pra você…"></textarea></div>
     </div>`;
-
-  const plain = `RELATÓRIO — ${DATA.meta.title}\n${perLabel}\n\n` + P.join("\n\n") +
-    `\n\n— gerado pela dashboard (${DATA.meta.generated_at_br})`;
 
   document.getElementById("reportView").innerHTML = `
     <div class="report">
       <div class="rep-head">
         <div><h2>📄 Relatório — ${escape_(perLabel)}</h2>
-          <p class="sub" style="margin-top:2px">Muda sozinho conforme o período escolhido acima · atualizado ${DATA.meta.generated_at_br}</p></div>
-        <button class="rep-copy" id="repCopy">📋 Copiar texto pro WhatsApp</button>
+          <p class="sub" style="margin-top:2px">Muda sozinho conforme o período · atualizado ${DATA.meta.generated_at_br}</p></div>
       </div>
-      ${sec1}${sec2}${sec3}${sec4}${sec5}${sec6}${sec7}
+      ${briefingBlock}
+      <p class="sub" style="margin:0 0 8px">⬇️ Abaixo, os blocos visuais limpos — é o que você manda em print pro cliente.</p>
+      ${secVisual}
     </div>`;
 
-  // notas do gestor + links dos anúncios (salvos no navegador)
   document.querySelectorAll("#reportView [data-note]").forEach(t => {
     const k = "rep-note-" + t.dataset.note;
     try { t.value = localStorage.getItem(k) || ""; } catch(e){}
@@ -1303,16 +1320,13 @@ function renderReport(){
   });
   document.getElementById("repCopy").onclick = e => {
     const btn = e.currentTarget;
-    const notes = [["obs-trafego","Obs. tráfego"],["obs-diario","Obs. dia a dia"],["obs-campanhas","Plano campanhas"],["obs-proximos","Próximos passos"]]
-      .map(([k,lab]) => { let v=""; try{v=localStorage.getItem("rep-note-"+k)||"";}catch(_){} return v.trim() ? `\n\n${lab}: ${v.trim()}` : ""; }).join("");
-    const links = bestAds.map(a => { let v=""; try{v=localStorage.getItem("rep-adlink-"+a.label)||"";}catch(_){} return v.trim() ? `\n${a.label}: ${v.trim()}` : ""; }).join("");
-    const full = plain + (links ? "\n\nLinks dos destaques:" + links : "") + notes;
-    navigator.clipboard.writeText(full).then(() => { btn.textContent = "✅ Copiado!"; setTimeout(() => btn.textContent = "📋 Copiar texto pro WhatsApp", 1800); })
+    let scratch = ""; try { scratch = (localStorage.getItem("rep-note-scratch") || "").trim(); } catch(_){}
+    const full = briefText + (scratch ? "\n\nSUAS ANOTAÇÕES\n" + scratch : "");
+    navigator.clipboard.writeText(full).then(() => { btn.textContent = "✅ Copiado!"; setTimeout(() => btn.textContent = "📋 Copiar briefing", 1800); })
       .catch(() => { btn.textContent = "❌ copie manualmente"; });
   };
 }
 function repStat(l, v){ return `<div class="rep-stat"><div class="l">${l}</div><div class="v">${v}</div></div>`; }
-function repNote(key, ph, rows){ return `<div class="rep-note"><label>✍️ Observação do gestor</label><textarea data-note="${key}" rows="${rows||2}" placeholder="${escape_(ph)}"></textarea></div>`; }
 
 /* ============================================================ shell */
 function shell(){
