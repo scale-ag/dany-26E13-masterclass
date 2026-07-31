@@ -80,6 +80,35 @@ button,select,input{font:inherit;color:inherit}
 .viewtabs button:hover{color:var(--ink-1)}
 .viewtabs button[aria-selected="true"]{background:var(--brand);color:var(--brand-ink)}
 
+/* relatório */
+.report{max-width:940px;margin:0 auto}
+.rep-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.rep-head h2{font-size:20px;font-weight:680;margin:0;letter-spacing:-.01em}
+.rep-sec{background:var(--card);border:1px solid var(--ring);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);margin-bottom:14px}
+.rep-sec .step{font-size:10.5px;font-weight:700;color:var(--brand);letter-spacing:.08em;margin-bottom:3px}
+.rep-sec h3{font-size:15.5px;font-weight:660;margin:0 0 2px}
+.rep-p{font-size:14px;line-height:1.6;color:var(--ink-1);margin:12px 0 0}
+.rep-p.muted{color:var(--ink-2);font-size:13px;margin-top:4px}
+.rep-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:12px 0 2px}
+.rep-stat{background:var(--plane);border-radius:10px;padding:10px 12px}
+.rep-stat .l{font-size:10.5px;color:var(--ink-3);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.rep-stat .v{font-size:19px;font-weight:700;letter-spacing:-.01em;margin-top:3px;font-variant-numeric:tabular-nums}
+.rep-note{margin-top:12px}
+.rep-note label{font-size:12px;color:var(--ink-3);font-weight:600;display:block;margin-bottom:5px}
+.rep-note textarea{width:100%;background:var(--plane);border:1px solid var(--ring);border-radius:9px;padding:9px 11px;font:inherit;font-size:13.5px;color:var(--ink-1);resize:vertical;min-height:58px}
+.rep-ad{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--grid)}
+.rep-ad:last-of-type{border-bottom:0}
+.rep-ad .nm{font-weight:650;font-size:14px}
+.rep-ad .mt{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.rep-ad input{flex:1 1 220px;min-width:150px;background:var(--plane);border:1px solid var(--ring);border-radius:8px;padding:6px 9px;font:inherit;font-size:12.5px;color:var(--ink-1)}
+.insight{display:flex;gap:11px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--grid)}
+.insight:last-child{border-bottom:0}
+.insight .ico{font-size:16px;flex:none;line-height:1.5}
+.insight .tx{font-size:13.5px;line-height:1.55;color:var(--ink-2)}
+.insight .tx b{color:var(--ink-1)}
+.rep-copy{appearance:none;border:1px solid var(--brand);background:var(--brand);color:var(--brand-ink);font:inherit;font-weight:650;font-size:13px;padding:9px 15px;border-radius:9px;cursor:pointer;white-space:nowrap}
+.rep-copy:hover{filter:brightness(1.06)}
+
 /* ---------------------------------------------------------------- filtros */
 .controls{
   display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;
@@ -304,7 +333,7 @@ const escape_ = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",
 
 /* ============================================================ estado */
 let DATA = null;
-let STATE = {from:null, to:null, compare:true, metric:"spend", mode:"traffic",
+let STATE = {from:null, to:null, compare:true, metric:"spend", mode:"traffic", tab:"traffic",
              treeSort:{key:"spend", dir:-1}, expanded:new Set(), goal:null, preset:"all"};
 
 /* ============================================================ métricas
@@ -616,7 +645,16 @@ function setPeriod(from, to, preset){
   document.getElementById("to").value = to;
   document.querySelectorAll("[data-preset]").forEach(b =>
     b.setAttribute("aria-pressed", b.dataset.preset === STATE.preset));
-  render();
+  refresh();
+}
+
+/* Decide qual visão renderizar conforme a aba ativa (dashboard × relatório). */
+function refresh(){
+  const rep = STATE.tab === "report";
+  const dv = document.getElementById("dashView"), rv = document.getElementById("reportView");
+  if (dv) dv.hidden = rep;
+  if (rv) rv.hidden = !rep;
+  if (rep) renderReport(); else render();
 }
 
 function deltaHTML(cur, prev, fmt, higherIsBetter){
@@ -1049,6 +1087,233 @@ function renderDaily(){
   document.getElementById("dtbl").innerHTML = `<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
 }
 
+/* ============================================================ relatório
+   Gera automaticamente, pelo período selecionado, um relatório no padrão Scale:
+   visual + textos em linguagem simples + insights/gargalos. Botão copia o texto. */
+
+/* Métricas agregadas por NOME de anúncio (tráfego), somando todas as veiculações. */
+function adsByName(from, to){
+  const tax = DATA.meta.tax, map = new Map();
+  const g = a => { let n = map.get(a); if (!n){ n = Object.assign(blank(), {label:a}); map.set(a, n); } return n; };
+  for (const r of DATA.ads) if (r.d >= from && r.d <= to) accAd(g(r.a), r, tax);
+  for (const s of DATA.sales) if (s.d >= from && s.d <= to && isTraffic(s) && s.m === "ad") accSale(g(s.a), s);
+  return [...map.values()].map(derive).filter(a => a.spend > 0 || a.sales > 0);
+}
+
+function renderReport(){
+  const {from, to} = STATE, days = diffDays(from, to) + 1;
+  const pTo = addDays(from, -1), pFrom = addDays(pTo, -(days-1));
+  const sm = STATE.mode;
+  STATE.mode = "total";   const tot = aggregate(from, to);
+  STATE.mode = "traffic"; const traf = aggregate(from, to), trafPrev = aggregate(pFrom, pTo);
+  const drows = daily(from, to);
+  const tree = buildTree(from, to);
+  STATE.mode = sm;
+  const ads = adsByName(from, to);
+  const T = CAC_GOAL;
+
+  const perLabel = days === 1 ? dayFull(from) : `${dayFull(from)} a ${dayFull(to)} · ${days} dias`;
+  const over = traf.cac != null && traf.cac > T;
+  const repCac = c => c == null || !isFinite(c) ? "—" : `<b style="color:${c <= T ? "var(--good-text)" : "var(--critical)"}">${M.money(c)}</b>`;
+  const P = [];  // parágrafos em texto puro, pro botão "copiar"
+
+  /* ---- 1. Visão geral ---- */
+  const t1 = `No período (${perLabel}), investimos ${M.money(tot.spend)} em anúncios (já com imposto) e geramos ${int(tot.allSales)} vendas no total, somando ${M.money(tot.allRev)} em receita. Dessas, ${int(traf.trafSales)} vieram do tráfego pago e ${int(traf.orgSales)} foram orgânicas/diretas.`;
+  P.push("📊 VISÃO GERAL\n" + t1);
+  const sec1 = `
+    <div class="rep-sec">
+      <div class="step">1 · VISÃO GERAL</div>
+      <h3>📊 Como está o funil no total</h3>
+      <div class="rep-stats">
+        ${repStat("Investimento", M.money(tot.spend))}
+        ${repStat("Receita total", M.money(tot.allRev))}
+        ${repStat("Vendas totais", int(tot.allSales))}
+        ${repStat("ROAS total", M.x(tot.roas))}
+        ${repStat("CAC total", M.money(tot.cac))}
+      </div>
+      <p class="rep-p">${t1}</p>
+    </div>`;
+
+  /* ---- 2. Tráfego pago ---- */
+  let t2 = `Olhando só o tráfego pago: foram ${int(traf.sales)} vendas, com custo por venda (CAC) de ${M.money(traf.cac)}. `;
+  t2 += traf.cac == null ? "Ainda sem vendas de tráfego no período."
+      : over ? `Está ${M.money(traf.cac - T)} acima da nossa meta de ${M.money(T)} — dá pra apertar, mas seguimos perto do ideal.`
+             : `Está dentro da meta de ${M.money(T)}, com folga de ${M.pct1((T - traf.cac)/T)}. 👍`;
+  if (traf.cac != null && trafPrev.cac != null && isFinite(trafPrev.cac))
+    t2 += ` Comparando com o período anterior, o CAC ${traf.cac < trafPrev.cac ? "melhorou" : "subiu"} (de ${M.money(trafPrev.cac)} para ${M.money(traf.cac)}).`;
+  P.push("🎯 TRÁFEGO PAGO\n" + t2);
+  const sec2 = `
+    <div class="rep-sec">
+      <div class="step">2 · TRÁFEGO PAGO</div>
+      <h3>🎯 Como está só o tráfego (o que a mídia gera)</h3>
+      <div class="rep-stats">
+        ${repStat("Investimento", M.money(traf.spend))}
+        ${repStat("Receita tráfego", M.money(traf.trafRev))}
+        ${repStat("Vendas tráfego", int(traf.sales))}
+        ${repStat("CAC tráfego", repCac(traf.cac))}
+        ${repStat("Meta de CAC", M.money(T))}
+      </div>
+      <p class="rep-p">${t2}</p>
+      ${repNote("obs-trafego", "Sua observação sobre o tráfego (opcional)")}
+    </div>`;
+
+  /* ---- 3. Dia a dia ---- */
+  const ds = drows.filter(r => r.sales > 0);
+  let t3;
+  if (ds.length){
+    const best = ds.reduce((a,b) => b.cac < a.cac ? b : a);
+    const worst = ds.reduce((a,b) => b.cac > a.cac ? b : a);
+    const mid = Math.ceil(ds.length/2);
+    const avg = arr => { const s = arr.reduce((x,r) => x + (r.spend||0), 0), v = arr.reduce((x,r) => x + (r.sales||0), 0); return v > 0 ? s/v : null; };
+    const early = avg(ds.slice(0, mid)), late = avg(ds.slice(mid));
+    const trend = (early != null && late != null && ds.length >= 3) ? (late < early ? " Nos dias mais recentes o CAC vem caindo — bom sinal." : late > early ? " Nos dias mais recentes o CAC subiu um pouco — de olho." : "") : "";
+    t3 = `No dia a dia, o melhor dia foi ${dayFull(best.d)} (${int(best.sales)} vendas, CAC ${M.money(best.cac)}) e o mais caro foi ${dayFull(worst.d)} (CAC ${M.money(worst.cac)}).${trend}`;
+  } else {
+    t3 = "Sem vendas de tráfego dia a dia no período selecionado.";
+  }
+  P.push("📅 DIA A DIA\n" + t3);
+  const dailyRows = [...drows].reverse().map(r => `<tr>
+      <td style="text-align:left">${dayFull(r.d)}</td><td>${M.money(r.spend)}</td><td>${int(r.sales)}</td>
+      <td>${repCac(r.cac)}</td><td>${M.x(r.roas)}</td><td>${M.pct1(r.convCheck)}</td></tr>`).join("");
+  const sec3 = `
+    <div class="rep-sec">
+      <div class="step">3 · DIA A DIA</div>
+      <h3>📅 Como o funil se comporta por dia</h3>
+      <div class="tblwrap"><table class="daily" style="min-width:520px"><thead><tr>
+        <th style="text-align:left">Dia</th><th>Gasto</th><th>Vendas</th><th>CAC</th><th>ROAS</th><th>Conv. checkout</th>
+      </tr></thead><tbody>${dailyRows}</tbody></table></div>
+      <p class="rep-p">${t3}</p>
+      ${repNote("obs-diario", "Sua observação sobre o dia a dia (ex.: testes que subiu/pausou)")}
+    </div>`;
+
+  /* ---- 4. Campanhas (macro) ---- */
+  const active = tree.camps.filter(c => c.spend > 0);
+  const overC = active.filter(c => c.cac != null && c.cac > T);
+  const underC = active.filter(c => c.cac != null && c.cac <= T);
+  const bestC = underC.filter(c => c.sales > 0).sort((a,b) => a.cac - b.cac)[0];
+  let t4 = `Temos ${active.length} campanha${active.length !== 1 ? "s" : ""} rodando: ${underC.length} com o CAC dentro da meta e ${overC.length} acima. `;
+  t4 += bestC ? `A que melhor performa é "${bestC.label}" (CAC ${M.money(bestC.cac)}). ` : "";
+  t4 += "Estamos concentrando verba nas que convertem melhor e cortando/otimizando as que estão caras.";
+  P.push("🗂️ CAMPANHAS\n" + t4);
+  const topC = active.slice().sort((a,b) => b.spend - a.spend).slice(0, 6);
+  const campRows = topC.map(c => `<tr>
+      <td style="text-align:left">${escape_(c.label)}</td><td>${M.money(c.spend)}</td><td>${int(c.sales)}</td>
+      <td>${repCac(c.cac)}</td><td>${M.x(c.roas)}</td></tr>`).join("");
+  const sec4 = `
+    <div class="rep-sec">
+      <div class="step">4 · CAMPANHAS</div>
+      <h3>🗂️ Cenário das campanhas</h3>
+      <div class="tblwrap"><table class="daily" style="min-width:520px"><thead><tr>
+        <th style="text-align:left">Campanha</th><th>Gasto</th><th>Vendas</th><th>CAC</th><th>ROAS</th>
+      </tr></thead><tbody>${campRows}</tbody></table></div>
+      <p class="rep-p">${t4}</p>
+      ${repNote("obs-campanhas", "Seu plano nas campanhas (ex.: pausei as estouradas, foco nas campeãs)")}
+    </div>`;
+
+  /* ---- 5. Melhores anúncios ---- */
+  const bestAds = ads.filter(a => a.sales > 0).sort((a,b) => (b.sales - a.sales) || (a.cac - b.cac)).slice(0, 5);
+  P.push("🏆 MELHORES ANÚNCIOS\n" + (bestAds.length ? bestAds.map(a => `${a.label}: ${int(a.sales)} vendas, CAC ${M.money(a.cac)}`).join("\n") : "sem vendas atribuídas a anúncio no período."));
+  const adRows = bestAds.length ? bestAds.map(a => `
+      <div class="rep-ad">
+        <div><span class="nm">${escape_(a.label)}</span> <span class="mt">· ${int(a.sales)} vendas · CAC ${M.money(a.cac)} · ${M.money(a.spend)} gastos</span></div>
+        <input data-adlink="${encodeURIComponent(a.label)}" placeholder="cole o link do anúncio (Instagram) — opcional">
+      </div>`).join("") : `<p class="rep-p muted">Sem vendas atribuídas a um anúncio específico no período.</p>`;
+  const sec5 = `
+    <div class="rep-sec">
+      <div class="step">5 · MELHORES ANÚNCIOS</div>
+      <h3>🏆 Destaques pra produzir mais</h3>
+      <p class="rep-p muted">Os que mais venderam no período — base pra criar novas variações. Cole o link de cada um pra mandar pro cliente.</p>
+      ${adRows}
+    </div>`;
+
+  /* ---- 6. Próximos passos ---- */
+  const sec6 = `
+    <div class="rep-sec">
+      <div class="step">6 · PRÓXIMOS PASSOS</div>
+      <h3>🚀 O que vamos executar</h3>
+      ${repNote("obs-proximos", over
+        ? "Ex.: cortar os anúncios que estão queimando verba, escalar os campeões e trazer o CAC de volta pra meta…"
+        : "Ex.: escalar com cuidado mantendo o CAC no lugar, subir novas estruturas…", 3)}
+    </div>`;
+
+  /* ---- 7. Insights (visão Scale) ---- */
+  const ins = [];
+  const cr = traf.cr, lp = traf.lpCheck, cc = traf.convCheck;
+  if (cr != null && lp != null && cc != null){
+    ins.push(["🔎", `<b>Caminho depois do clique:</b> de cada 100 cliques, ~${Math.round(cr*100)} chegam na página, ~${Math.round(cr*lp*100)} iniciam o checkout e ~${(cr*lp*cc*100).toFixed(1)} compram.`]);
+    const stages = [
+      {name:"clique → página (connect rate)", rate:cr, advice:"pode ser velocidade de carregamento ou rastreamento da página"},
+      {name:"página → checkout", rate:lp, advice:"a página/oferta não está levando gente suficiente ao checkout — testar título, prova social e chamada pra ação"},
+      {name:"checkout → compra", rate:cc, advice:"muita gente inicia mas não finaliza — testar o checkout, o preço e as formas de pagamento"}
+    ];
+    const b = stages.slice().sort((a,z) => a.rate - z.rate)[0];
+    ins.push(["⛔", `<b>Maior gargalo:</b> a etapa de <b>${b.name}</b>, onde só ${M.pct1(b.rate)} avançam. Foco aqui: ${b.advice}.`]);
+  }
+  if (cr != null && cr < 0.9)
+    ins.push(["🐢", `<b>Connect rate:</b> ${M.pct1(cr)} dos cliques chegam na página — estamos perdendo ${M.pct1(1-cr)} no caminho. Vale checar velocidade e rastreamento da página.`]);
+
+  const cpcCeil = traf.conv != null && isFinite(traf.conv) ? T * traf.conv : null;
+  if (over && cpcCeil != null){
+    ins.push(traf.cpc > cpcCeil
+      ? ["💸", `<b>Custo do clique:</b> está em ${M.money(traf.cpc)}, acima dos ${M.money(cpcCeil)} que a meta comporta com a conversão atual. Dá pra atacar por dois lados: baratear o clique (criativo/público) ou melhorar a conversão da página.`]
+      : ["✅", `<b>Custo do clique saudável</b> (${M.money(traf.cpc)}). O que segura o CAC acima da meta é a conversão do funil, não o preço da mídia.`]);
+  }
+
+  const burning = ads.filter(a => a.spend >= T && (a.sales === 0 || (a.cac != null && a.cac > 2*T))).sort((a,b) => b.spend - a.spend).slice(0, 3);
+  burning.forEach(a => ins.push(["🔥", `<b>Queimando verba:</b> "${escape_(a.label)}" gastou ${M.money(a.spend)} e ${a.sales === 0 ? "não trouxe nenhuma venda" : `trouxe só ${int(a.sales)} (CAC ${M.money(a.cac)})`} — forte candidato a pausar.`]));
+
+  const promising = ads.filter(a => a.sales > 0 && a.cac != null && a.cac < T*0.8).sort((a,b) => a.cac - b.cac).slice(0, 3);
+  promising.forEach(a => ins.push(["⭐", `<b>Pode surpreender:</b> "${escape_(a.label)}" está com CAC de ${M.money(a.cac)} (bem abaixo da meta) e ${int(a.sales)} vendas — vale colocar mais verba e criar variações.`]));
+
+  ins.push(["🧭", over
+    ? `<b>Resumo:</b> o tráfego está um pouco acima da meta de CAC, mas perto e evoluindo. Cortar o que queima verba, escalar os campeões e destravar o gargalo acima deve trazer o CAC pra dentro.`
+    : `<b>Resumo:</b> o tráfego está saudável, com CAC dentro da meta. Momento de escalar com cuidado, mantendo o CAC no lugar.`]);
+
+  P.push("🔎 INSIGHTS E PONTOS DE MELHORIA\n" + ins.map(i => "• " + i[1].replace(/<[^>]+>/g, "")).join("\n"));
+  const sec7 = `
+    <div class="rep-sec" style="border-color:color-mix(in srgb,var(--brand) 30%,transparent)">
+      <div class="step">7 · INSIGHTS</div>
+      <h3>🔎 Análise e pontos de melhoria</h3>
+      <div>${ins.map(i => `<div class="insight"><span class="ico">${i[0]}</span><span class="tx">${i[1]}</span></div>`).join("")}</div>
+    </div>`;
+
+  const plain = `RELATÓRIO — ${DATA.meta.title}\n${perLabel}\n\n` + P.join("\n\n") +
+    `\n\n— gerado pela dashboard (${DATA.meta.generated_at_br})`;
+
+  document.getElementById("reportView").innerHTML = `
+    <div class="report">
+      <div class="rep-head">
+        <div><h2>📄 Relatório — ${escape_(perLabel)}</h2>
+          <p class="sub" style="margin-top:2px">Muda sozinho conforme o período escolhido acima · atualizado ${DATA.meta.generated_at_br}</p></div>
+        <button class="rep-copy" id="repCopy">📋 Copiar texto pro WhatsApp</button>
+      </div>
+      ${sec1}${sec2}${sec3}${sec4}${sec5}${sec6}${sec7}
+    </div>`;
+
+  // notas do gestor + links dos anúncios (salvos no navegador)
+  document.querySelectorAll("#reportView [data-note]").forEach(t => {
+    const k = "rep-note-" + t.dataset.note;
+    try { t.value = localStorage.getItem(k) || ""; } catch(e){}
+    t.oninput = () => { try { localStorage.setItem(k, t.value); } catch(e){} };
+  });
+  document.querySelectorAll("#reportView [data-adlink]").forEach(inp => {
+    const k = "rep-adlink-" + decodeURIComponent(inp.dataset.adlink);
+    try { inp.value = localStorage.getItem(k) || ""; } catch(e){}
+    inp.oninput = () => { try { localStorage.setItem(k, inp.value); } catch(e){} };
+  });
+  document.getElementById("repCopy").onclick = e => {
+    const btn = e.currentTarget;
+    const notes = [["obs-trafego","Obs. tráfego"],["obs-diario","Obs. dia a dia"],["obs-campanhas","Plano campanhas"],["obs-proximos","Próximos passos"]]
+      .map(([k,lab]) => { let v=""; try{v=localStorage.getItem("rep-note-"+k)||"";}catch(_){} return v.trim() ? `\n\n${lab}: ${v.trim()}` : ""; }).join("");
+    const links = bestAds.map(a => { let v=""; try{v=localStorage.getItem("rep-adlink-"+a.label)||"";}catch(_){} return v.trim() ? `\n${a.label}: ${v.trim()}` : ""; }).join("");
+    const full = plain + (links ? "\n\nLinks dos destaques:" + links : "") + notes;
+    navigator.clipboard.writeText(full).then(() => { btn.textContent = "✅ Copiado!"; setTimeout(() => btn.textContent = "📋 Copiar texto pro WhatsApp", 1800); })
+      .catch(() => { btn.textContent = "❌ copie manualmente"; });
+  };
+}
+function repStat(l, v){ return `<div class="rep-stat"><div class="l">${l}</div><div class="v">${v}</div></div>`; }
+function repNote(key, ph, rows){ return `<div class="rep-note"><label>✍️ Observação do gestor</label><textarea data-note="${key}" rows="${rows||2}" placeholder="${escape_(ph)}"></textarea></div>`; }
+
 /* ============================================================ shell */
 function shell(){
   const m = DATA.meta;
@@ -1068,9 +1333,10 @@ function shell(){
   const okSales = at.ad + at.adset + at.campaign;
 
   document.getElementById("app").innerHTML = `
-    <div class="viewtabs" role="tablist" aria-label="Base de análise">
-      <button data-mode="total" role="tab">📊 Visão Geral</button>
-      <button data-mode="traffic" role="tab">🎯 Tráfego Pago</button>
+    <div class="viewtabs" role="tablist" aria-label="Visão">
+      <button data-tab="total" role="tab">📊 Visão Geral</button>
+      <button data-tab="traffic" role="tab">🎯 Tráfego Pago</button>
+      <button data-tab="report" role="tab">📄 Relatório</button>
     </div>
 
     <div class="controls">
@@ -1095,6 +1361,7 @@ function shell(){
       </div>
     </div>
 
+    <div id="dashView">
     <div class="panel"><div class="health" id="health"></div></div>
 
     <div class="hero" id="hero"></div>
@@ -1155,6 +1422,9 @@ function shell(){
     </div>
 
     ${(m.warnings||[]).map(w => `<div class="warn"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="var(--warning)" stroke-width="1.6"><path d="M8 1.8 15 14H1L8 1.8Z" stroke-linejoin="round"/><path d="M8 6.2v3.4M8 11.8v.05" stroke-linecap="round"/></svg><span>${escape_(w)}</span></div>`).join("")}
+    </div>
+
+    <div id="reportView" hidden></div>
 
     <footer>
       Gasto bruto do período completo: ${money(DATA.ads.reduce((s,r)=>s+r.spend,0))} ·
@@ -1211,15 +1481,17 @@ function shell(){
     renderFunnel(aggregate(STATE.from, STATE.to));
   };
 
-  // abas de visão: Geral (todas as vendas) × Tráfego Pago (utm_source=meta-ads)
-  try { const mv = localStorage.getItem("funnel-mode"); if (mv === "total" || mv === "traffic") STATE.mode = mv; } catch(e){}
-  document.querySelectorAll("[data-mode]").forEach(b => {
-    b.setAttribute("aria-selected", b.dataset.mode === STATE.mode);
+  // abas: Visão Geral (todas) · Tráfego Pago (meta-ads) · Relatório
+  try { const tv = localStorage.getItem("funnel-tab"); if (["total","traffic","report"].includes(tv)) STATE.tab = tv; } catch(e){}
+  if (STATE.tab !== "report") STATE.mode = STATE.tab;
+  document.querySelectorAll("[data-tab]").forEach(b => {
+    b.setAttribute("aria-selected", b.dataset.tab === STATE.tab);
     b.onclick = () => {
-      STATE.mode = b.dataset.mode;
-      try { localStorage.setItem("funnel-mode", STATE.mode); } catch(e){}
-      document.querySelectorAll("[data-mode]").forEach(x => x.setAttribute("aria-selected", x.dataset.mode === STATE.mode));
-      render();
+      STATE.tab = b.dataset.tab;
+      if (STATE.tab !== "report") STATE.mode = STATE.tab;
+      try { localStorage.setItem("funnel-tab", STATE.tab); } catch(e){}
+      document.querySelectorAll("[data-tab]").forEach(x => x.setAttribute("aria-selected", x.dataset.tab === STATE.tab));
+      refresh();
     };
   });
 
